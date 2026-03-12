@@ -1,0 +1,478 @@
+# ============================================
+# Цель: максимальное исключение для уменьшения контекста Cursor.
+# Точечно вернуть нужные пути можно через паттерн ! (например !.cursor/rules/)
+# ============================================
+
+# ============================================
+# ЗАВИСИМОСТИ И ПАКЕТЫ (самое важное для исключения)
+# ============================================
+
+# Node.js/JavaScript/TypeScript (для React)
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.npm/
+.yarn/
+.pnpm/
+
+# Go зависимости
+vendor/                    # если используете vendor mode
+pkg/mod/                   # кэш Go модулей
+go.sum                      # lock-файл (обычно не нужен в контексте)
+
+# .NET/C# зависимости
+packages/
+paket-files/
+packages.lock.json
+*.nupkg
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+*.xml                    # кроме тех, что нужны для документации API
+
+# ============================================
+# СБОРКА И ВРЕМЕННЫЕ ФАЙЛЫ
+# ============================================
+
+# Общие
+dist/
+build/
+out/
+target/
+bin/
+obj/
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# React/Webpack сборка
+.next/                     # Next.js
+.nuxt/                     # Nuxt.js
+.parcel-cache/             # Parcel
+public/build/              # стандартная сборка
+static/dist/
+*.css.map                  # source maps
+*.js.map                   # source maps
+
+# JS/TS монорепо и фреймворки
+.turbo/
+.nx/
+.nx/cache/
+.vite/
+.svelte-kit/
+.astro/
+.contentlayer/
+.output/
+.pnpm-store/
+*.min.js
+*.min.css
+bower_components/
+
+# .NET сборка
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.msi
+*.msp
+*.nupkg
+TestResults/
+App_Data/
+artifacts/
+publish/
+
+# Go сборка
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.test.exe
+coverage.out
+coverage.html
+*.prof
+
+# ============================================
+# IDE И РЕДАКТОРЫ
+# ============================================
+
+# Cursor и окружение редактора
+.cursor/
+!.cursor/rules/
+!.cursor/prompts/
+agent-transcripts/
+.history/
+.localhistory/
+
+# VS Code (игнорируем, если не хотим делиться настройками)
+.vscode/
+*.code-workspace
+*.vscode-workspace
+.vscode-server/
+
+# Visual Studio
+.vs/
+.idea/
+*.sln.docstates
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.usertasks
+.vsconfig
+[Oo]bj/
+[Bb]in/
+
+# Другие IDE
+.idea/                     # JetBrains
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.fleet/
+
+# ============================================
+# СИСТЕМНЫЕ ФАЙЛЫ
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# КЭШ ИНСТРУМЕНТОВ
+# ============================================
+
+# Git
+.git/
+.gitignore                # исключаем для минимизации контекста
+.gitattributes
+.gitmodules
+.gitkeep                  # если используете для пустых папок
+
+# ESLint, Prettier и т.д.
+.eslintcache
+.stylelintcache
+.prettiercache
+.cache/
+.eslintrc.js              # исключаем для минимизации контекста
+.prettierrc
+
+# Тесты и покрытие
+coverage/
+.nyc_output/
+jest.config.js            # конфиг оставляем
+jest.setup.js
+*.test.ts
+*.spec.ts
+test-results/
+junit.xml
+test.log
+__tests__/__snapshots__/  # снапшоты тестов
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+*.dockerfile
+
+# ============================================
+# КОНФИДЕНЦИАЛЬНЫЕ ДАННЫЕ (НИКОГДА НЕ ДОЛЖНЫ ПОПАДАТЬ В КОНТЕКСТ)
+# ============================================
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
+.env.staging
+.env.example              # пример можно оставить, но обычно не нужно
+.envrc
+
+# Secrets и ключи
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+.aws/
+.gcp/
+.azure/
+config/credentials/
+config/master.key
+
+# Файлы конфигурации с паролями
+appsettings.Production.json
+appsettings.Staging.json
+secrets.json
+connectionstrings.config
+
+# ============================================
+# PYTHON
+# ============================================
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.tox/
+.ipynb_checkpoints/
+htmlcov/
+.coverage
+
+# ============================================
+# ИНФРАСТРУКТУРА (Terraform, Serverless и т.д.)
+# ============================================
+
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+.serverless/
+.aws-sam/
+
+# ============================================
+# ЯЗЫКО-СПЕЦИФИЧНЫЕ ИСКЛЮЧЕНИЯ
+# ============================================
+
+# TypeScript/JavaScript
+*.js.map
+*.d.ts.map
+*.tsbuildinfo
+node_modules/
+dist/
+build/
+
+# React специфичное
+.next/
+.nuxt/
+.vercel/
+.storybook/               # если не нужны сторибуки в контексте
+storybook-static/
+*.stories.tsx
+*.stories.jsx
+
+# Java/Kotlin
+.gradle/
+*.class
+*.jar
+*.war
+
+# C# специфичное
+*.csproj.user
+*.csproj.userprefs
+*.dbmdl
+*.dbml
+*.dbml.layout
+*.ldf
+*.mdf
+*.ndproj
+*.pubxml
+*.pubxml.user
+*.sdf
+*.suo
+*.userosscache
+*.vspx
+*.vsp
+*.psess
+*.v11.suo
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Oo]bj/
+[Bb]in/
+[Dd]ebugPS/
+[Rr]eleasePS/
+*.psess
+*.vsp
+*.vspx
+*.sap
+TestResult*
+[Bb]uild[Ss]cripts/
+*.cr
+*.etp
+*.publish.xml
+
+# Go специфичное
+vendor/                    # если используете vendor mode
+pkg/mod/                   # кэш Go модулей
+*.test
+*.prof
+*.out
+coverage.out
+coverage.html
+*.exe
+
+# ============================================
+# ДОКУМЕНТАЦИЯ И АССЕТЫ (обычно не нужны для кода)
+# ============================================
+
+# Изображения и медиа
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.ico
+*.svg                      # если иконки, то можно исключить
+*.mp4
+*.avi
+*.mov
+*.webm
+*.wav
+*.mp3
+*.ogg
+*.webp
+*.tiff
+*.bmp
+
+# Документы
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.odt
+*.ods
+*.odp
+*.rtf
+
+# Архивы
+*.zip
+*.tar
+*.gz
+*.7z
+*.rar
+*.bz2
+
+# Резервные копии и слияния
+*.bak
+*.backup
+*.old
+*.orig
+
+# Логи
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ============================================
+# ВРЕМЕННЫЕ ФАЙЛЫ РЕДАКТОРОВ
+# ============================================
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+*.*.swn
+*.*.swo
+*.*.swp
+.*.swn
+.*.swo
+.*.swp
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+org-id-locations
+*_archive
+
+# ============================================
+# ПОЛЕЗНЫЕ ИСКЛЮЧЕНИЯ ДЛЯ КОНКРЕТНЫХ ФРЕЙМВОРКОВ
+# ============================================
+
+# Next.js
+.next/
+out/
+.vercel/
+*.next-env.d.ts
+
+# Create React App
+/build
+/public/build
+*.env.local
+
+# ASP.NET Core
+/[Oo]bj/
+/[Bb]in/
+/[Pp]ublish/
+*.csproj.user
+appsettings.Development.json  # можно оставить, если нужно
+appsettings.Production.json   # обычно исключаем
+
+# Go модули (go.sum — lock-файл; go.mod при необходимости вернуть через !go.mod)
+go.sum
