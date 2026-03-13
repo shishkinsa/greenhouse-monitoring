@@ -112,6 +112,8 @@ coverage.html
 .cursor/
 !.cursor/rules/
 !.cursor/prompts/
+!.cursor/prompts/**/*.md
+!.cursor/rules.json
 agent-transcripts/
 .history/
 .localhistory/
