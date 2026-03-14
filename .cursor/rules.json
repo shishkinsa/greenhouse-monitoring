@@ -1,0 +1,161 @@
+{
+    "version": "1.0",
+    "description": "Контекстные правила с привязкой к документации",
+    "docs_paths": {
+        "root": "docs",
+        "standards": "docs/standards",
+        "architecture": "docs/architecture",
+        "requirements": "docs/requirements",
+        "ai": "docs/ai"
+    },
+    "rules": [
+        {
+            "name": "new-csharp-file",
+            "trigger": {
+                "pattern": "src/services/**/*.cs",
+                "action": "create"
+            },
+            "instructions": "При создании C# файла в services:",
+            "docs_to_check": [
+                "docs/standards/naming-conventions.md#c-sharp",
+                "docs/architecture/diagram/components/",
+                "docs/architecture/adr/0002-cqrs-pattern.md"
+            ],
+            "validation": {
+                "naming": "из docs/standards/naming-conventions.md",
+                "requirements": "из docs/requirements/functional/"
+            }
+        },
+        {
+            "name": "new-react-component",
+            "trigger": {
+                "pattern": "src/frontend/components/**/*.tsx",
+                "action": "create"
+            },
+            "instructions": "При создании React компонента:",
+            "docs_to_check": [
+                "docs/standards/naming-conventions.md#react",
+                "docs/architecture/diagram/components/"
+            ]
+        },
+        {
+            "name": "new-adr",
+            "trigger": {
+                "pattern": "docs/architecture/adr/*.md",
+                "action": "create"
+            },
+            "instructions": "При создании нового ADR:",
+            "docs_to_check": [
+                "docs/architecture/adr/template.md",
+                "docs/architecture/adr/README.md"
+            ],
+            "validation": {
+                "template": "Используй шаблон из docs/architecture/adr/template.md",
+                "required_sections": [
+                    "Контекст",
+                    "Решение",
+                    "Последствия"
+                ],
+                "requirements_traceability": "Добавь ссылки на требования из docs/requirements/"
+            },
+            "auto_add": {
+                "to_index": "docs/architecture/adr/README.md",
+                "format": "| {{number}} | {{title}} | {{date}} | {{status}} |"
+            }
+        }
+    ],
+    "contexts": [
+        {
+            "name": "architecture-review",
+            "patterns": [
+                "docs/architecture/**/*.md",
+                "docs/adr/**/*.md"
+            ],
+            "instructions": "Ты архитектор, reviewing архитектурные документы.",
+            "docs_to_load": [
+                "docs/requirements/non-functional/*.md",
+                "docs/architecture/diagram/context/*.c4",
+                "docs/architecture/diagram/containers/*.c4"
+            ],
+            "checklists": {
+                "adr": "docs/architecture/adr/checklist.md",
+                "diagram": "docs/architecture/diagram/quality-checklist.md"
+            }
+        },
+        {
+            "name": "requirements-analysis",
+            "patterns": [
+                "docs/requirements/**/*.md"
+            ],
+            "instructions": "Ты business analyst, анализирующий требования.",
+            "docs_to_load": [
+                "docs/architecture/adr/README.md",
+                "docs/standards/requirements-format.md"
+            ],
+            "validation": {
+                "user_stories": "Проверь формат 'Как... Я хочу... Чтобы...'",
+                "acceptance_criteria": "Должны быть измеримыми"
+            }
+        },
+        {
+            "name": "api-design",
+            "patterns": [
+                "docs/openapi/**/*.yaml",
+                "docs/openapi/**/*.json"
+            ],
+            "instructions": "Ты API designer, создающий OpenAPI спецификации.",
+            "docs_to_load": [
+                "docs/requirements/functional/api-requirements.md",
+                "docs/architecture/adr/0009-api-design.md",
+                "docs/standards/api-standards.md"
+            ],
+            "validation": {
+                "openapi": "Проверь соответствие OpenAPI 3.0",
+                "naming": "Следуй стандартам именования эндпоинтов",
+                "security": "Все endpoints должны иметь security схемы"
+            }
+        }
+    ],
+    "templates": {
+        "new-adr": {
+            "source": "docs/architecture/adr/template.md",
+            "variables": {
+                "number": "auto-increment",
+                "date": "current-date",
+                "author": "git-user"
+            }
+        },
+        "new-requirement": {
+            "source": "docs/requirements/template.md",
+            "variables": {
+                "id": "REQ-{counter}",
+                "type": "functional|non-functional|business"
+            }
+        }
+    },
+    "validation_hooks": [
+        {
+            "name": "validate-adr",
+            "trigger": "docs/architecture/adr/*.md",
+            "script": "scripts/validate-adr.js",
+            "docs": "docs/architecture/adr/validation-rules.md"
+        },
+        {
+            "name": "validate-openapi",
+            "trigger": "docs/openapi/*.yaml",
+            "command": "npx swagger-cli validate",
+            "docs": "docs/standards/api-standards.md"
+        }
+    ],
+    "auto_documentation": {
+        "on_code_generation": {
+            "update_readme": true,
+            "update_diagram_refs": true,
+            "create_adr_if_needed": true
+        },
+        "templates": {
+            "readme_entry": "- `{{file}}`: {{description}} ({{date}})",
+            "adr_reference": "[ADR-{{number}}](docs/architecture/adr/{{file}})"
+        }
+    }
+}
