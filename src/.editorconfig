@@ -2,6 +2,21 @@
 
 root = true
 
+# Детальные правила именования и стилей: docs/standards/
+# - C#: c-charp-naming-conventions.md (проверяются этим файлом)
+# - TypeScript: ts-naming-conventions.md
+# - React: react-naming-conventions.md
+# - PostgreSQL: psql-naming-conventions.md
+# Для TS/React/SQL в EditorConfig задаётся только форматирование; именование — в документации и линтерах.
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = false
+
 # Файлы C#
 [*.cs]
 
@@ -1382,3 +1397,26 @@ dotnet_diagnostic.CS8602.severity = none
 
 # CS8618: Non nullable field _name is not initialized. Consider declare the field as nullable type
 dotnet_diagnostic.CS8604.severity = none
+
+#### TypeScript / JavaScript (docs/standards/ts-naming-conventions.md, react-naming-conventions.md) ####
+
+[*.{ts,tsx,js,jsx}]
+indent_style = space
+indent_size = 2
+charset = utf-8
+end_of_line = crlf
+trim_trailing_whitespace = true
+
+#### SQL (docs/standards/psql-naming-conventions.md) ####
+
+[*.sql]
+indent_style = space
+indent_size = 4
+charset = utf-8
+end_of_line = crlf
+trim_trailing_whitespace = true
+
+#### Markdown ####
+
+[*.md]
+trim_trailing_whitespace = true
