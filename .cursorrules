@@ -47,7 +47,7 @@ documentation:
   # OpenAPI спецификация
   # Проверять при работе с API
   
-  business_requirements: "docs/requirements/business/README.md"
+  business_requirements: "docs/requirements/business/"
   # Бизнес-требования - зачем это нужно
   # Для обоснования решений
   
