@@ -1,0 +1,15 @@
+specification {
+    element actor
+    element system
+    element component
+    element greenhouse
+    element sensor
+    element camera
+    element database
+    element queue
+    element message
+    element file
+    element network
+    element storage
+    element cache
+}

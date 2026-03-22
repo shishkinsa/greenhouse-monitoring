@@ -18,10 +18,12 @@ exported=0
 while IFS= read -r -d '' dir; do
   if [[ -n "$(find "${dir}" -name '*.c4' -print -quit)" ]]; then
     name="$(basename "${dir}")"
-    out="${OUT_ROOT}/${name}"
-    mkdir -p "${out}"
-    echo "==> likec4: ${dir} -> ${out}"
-    (cd "${ROOT}" && npx likec4 export png -o "${out}" "${dir}")
+    # Пути относительно ROOT: абсолютные /mnt/... из Git Bash ломают likec4 на Windows.
+    rel_src="docs/architecture/diagram/${name}"
+    rel_out="docs/public/likec4/${name}"
+    mkdir -p "${ROOT}/${rel_out}"
+    echo "==> likec4: ${rel_src} -> ${rel_out}"
+    (cd "${ROOT}" && npx likec4 export png -o "${rel_out}" "${rel_src}")
     exported=$((exported + 1))
   fi
 done < <(find "${DIAGRAM_ROOT}" -mindepth 1 -maxdepth 1 -type d -print0)

@@ -1,0 +1,7 @@
+{
+    "mcpServers": {
+        "likec4": {
+            "url": "http://localhost:33335/mcp"
+        }
+    }
+}

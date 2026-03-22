@@ -1,0 +1,29 @@
+model {
+    employee = actor "Сотрудник" {
+        description 'Сотрудник системы мониторинга теплицы'
+    }
+    engineer = actor "Инженер" {
+        description 'Инженер системы мониторинга теплицы'
+    }
+
+    greenhouse = greenhouse "Теплица" {
+        description 'Теплица системы мониторинга теплицы'
+    }
+
+    greenhouse_system = system "Greenhouse Monitoring" {
+        description 'Система мониторинга теплицы. \n Получает данные по датчикам и видеопотоку с теплицы и предоставляет доступ к ним'
+
+        greenhouse -> greenhouse_system "Получение данных по датчикам"
+        greenhouse_system -> greenhouse "Получение видеоконтента"
+
+        employee -> greenhouse_system {
+            title 'Оперативный просмотр данных датчиков и видеопотока'
+            description 'Сотрудник может просматривать данные датчиков и видеопоток в реальном времени'
+        }
+        engineer -> greenhouse_system {
+            title 'Просмотр исторических данных датчиков и видеопотока'
+            description 'Инженер может просматривать исторические данные датчиков и видеопоток'
+        }
+    }
+}
+
