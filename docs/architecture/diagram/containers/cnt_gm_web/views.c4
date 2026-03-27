@@ -1,12 +1,8 @@
 views {
-    view index {
+    view cnt_gm_web_view {
         title 'Диаграмма контекста'
         description 'Диаграмма контекста системы мониторинга теплицы'
 
         include *
-    }
-
-    view of greenhouse_system {
-        include cnt_gm_webapi.*
     }
 }

@@ -1,0 +1,32 @@
+model {
+    extend greenhouse_system {
+
+        cnt_gm_web = service "CNT_GM_Web" {
+            description "Web приложение ИС"
+            technology "React, TypeScript"
+            style {
+                icon: tech:react
+                shape browser
+            }
+            metadata{
+                framework 'React'
+                language 'TypeScript'
+                version '18.2.0'
+                deployment_target ['staging', 'production']
+            }
+        }
+
+        employee -[https]-> cnt_gm_web 'Оперативный просмотр данных' {
+            technology 'opens in browser'
+        }
+        engineer -[https]-> cnt_gm_web 'Просмотр исторических данных' {
+            technology 'opens in browser'
+        }
+        
+        cnt_gm_web -[https]-> cnt_gm_webapi 'Read, Write Data' {
+            technology 'HTTPS, WebSocet, GraphQL'
+        }
+    }
+
+    
+}

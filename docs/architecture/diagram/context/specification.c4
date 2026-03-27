@@ -1,15 +1,63 @@
 specification {
-    element actor
+    element actor {
+        style {
+            color green
+            shape person
+        }
+    }
+
     element system
+
+    element service
+
     element component
-    element greenhouse
-    element sensor
-    element camera
-    element database
-    element queue
-    element message
-    element file
-    element network
-    element storage
-    element cache
+    
+    element greenhouse {
+        style {
+            color slate
+        }
+    }
+
+    element digital_controller {
+        style {
+            color slate
+        }
+    }
+
+    element video_camera
+    {
+        style {
+            color slate
+        }
+    }
+
+    element database {
+        style {
+            shape storage
+        }
+    }
+
+    element queue {
+        style {
+            shape queue
+        }
+    }
+
+    element file {
+         style {
+            shape bucket
+        }
+    }
+
+    element cache {
+         style {
+            shape storage
+        }
+    }
+
+    relationship async
+    relationship websocket
+    relationship https
+    relationship mqtt
+    relationship rtsp
 }

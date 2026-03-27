@@ -1,0 +1,9 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_webapi = service "CNT_GM_WebAPI" {
+            description "Сервис WebApi"
+            technology "ASP.NET Core, .NET 10"
+            icon:tech:dotnet
+        }
+    }
+}
