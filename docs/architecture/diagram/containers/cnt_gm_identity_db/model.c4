@@ -1,0 +1,9 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_identity_db = database "CNT_GM_Identity_DB" {
+            description "БД для хранения данных аутентификации и авторизации"
+            technology "PostgreSQL"
+            icon:tech:postgresql
+        }
+    }
+}

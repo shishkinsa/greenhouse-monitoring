@@ -1,0 +1,13 @@
+model {
+    extend cnt_greenhouse {
+        cnt_digital_controller = digital_controller 'CNT_Digital_Controller' {
+            description 'Контроллер сбора данных с датчиков температуры, влажности и кислотности почвы'
+
+            this -> greenhouse_system.cnt_gm_broker 'Данные по температуре,
+влажности и кислотности почвы'
+            {
+                technology 'TLS/MQTT'
+            }
+        }
+    }
+}

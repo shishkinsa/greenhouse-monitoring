@@ -1,0 +1,19 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_webrtcserver_only = container 'CNT_GM_WebRTCServer_Only' {
+            description 'WebRTC сервер для передачи видеопотока с камер в реальном времени'
+            technology 'go2rtc'
+            icon:tech:webrtc
+
+            cnt_gm_webrtcserver_only -> cnt_greenhouse.cnt_video_camera 'Получение видеоконтента'
+            {
+                technology '554/TCP/RTSP, 5004,5005/UDP/RTC'
+            }
+
+            cnt_gm_webrtcserver_only -> cnt_gm_secrets 'Получение секретов'
+            {
+                technology 'HTTPS, Bearer access token'
+            }
+        }
+    }
+}

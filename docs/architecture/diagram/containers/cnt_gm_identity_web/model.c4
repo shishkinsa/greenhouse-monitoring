@@ -1,0 +1,18 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_identity_web = container "CNT_GM_Identity_Web" {
+            description "Web приложение Identity"
+            technology "React, TypeScript"
+
+            style {
+                icon:tech:react
+                shape browser
+            }
+
+            cnt_gm_identity_web -[https]-> cnt_gm_identity_webapi "Read, Write Data"
+            {
+                technology 'HTTPS'
+            }
+        }
+    }
+}

@@ -1,0 +1,9 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_db = database "CNT_GM_DB" {
+            description "База данных для хранения справочников и метаданных"
+            technology "PostgreSQL"
+            icon:tech:postgresql
+        }
+    }
+}

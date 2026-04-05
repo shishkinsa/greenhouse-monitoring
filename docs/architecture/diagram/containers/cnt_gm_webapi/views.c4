@@ -1,0 +1,7 @@
+views {
+    view of greenhouse_system.cnt_gm_webapi {
+        title 'Представление для CNT_GM_WebAPI'
+
+        include *
+    }
+}

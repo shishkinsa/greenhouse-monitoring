@@ -7,27 +7,12 @@ model {
         """
 
     }
-
+    
     employee = actor "Сотрудник" {
         description 'Сотрудник системы мониторинга теплицы'
     }
     engineer = actor "Инженер" {
         description 'Инженер системы мониторинга теплицы'
-    }
-
-    cnt_greenhouse = greenhouse "Теплица" {
-        description "Теплица системы мониторинга теплицы"
-    }
-
-    
-
-    cnt_greenhouse -> greenhouse_system 'Данные по датчикам'
-    {
-        technology 'TLS/MQTT'
-    }
-    greenhouse_system -> cnt_greenhouse 'Получение видеоконтента'
-    {
-        technology 'RTSP'
     }
 
 }

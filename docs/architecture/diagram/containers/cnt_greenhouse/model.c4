@@ -1,0 +1,5 @@
+model {
+    cnt_greenhouse = greenhouse "Теплица" {
+        description "Теплица для выращивания растений"
+    }
+}

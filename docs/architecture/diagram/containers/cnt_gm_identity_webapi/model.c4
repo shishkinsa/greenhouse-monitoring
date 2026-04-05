@@ -1,0 +1,15 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_identity_webapi = container 'CNT_GM_Identity_WebAPI' {
+            description "Сервис Identity WebApi"
+            technology "OpenIddict, ASP.NET Core, .NET 10"
+            icon:tech:dotnet
+
+            cnt_gm_identity_webapi -> cnt_gm_identity_db 'Read, Write Data'
+            {
+                technology '5432/TCP via TLS'
+            }
+
+        }
+    }
+}

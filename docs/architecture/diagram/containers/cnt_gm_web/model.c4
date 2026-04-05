@@ -31,6 +31,16 @@ model {
             cnt_gm_web -[https]-> cnt_gm_webapi 'Read, Write Data' {
                 technology 'HTTPS, WebSocket, GraphQL; Bearer access token'
             }
+
+            cnt_gm_web -> cnt_gm_webrtcserver_only 'Получение видеоконтента'
+            {
+                technology 'WebSocet, MSE'
+            }
+
+            cnt_gm_web -> cnt_gm_webrtcserver_history 'Получение видеоконтента для истории'
+            {
+                technology 'WebSocet, MSE'
+            }
         }
 
         

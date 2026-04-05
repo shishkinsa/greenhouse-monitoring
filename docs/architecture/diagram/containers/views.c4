@@ -1,0 +1,8 @@
+views {
+    view of greenhouse_system {
+        title 'Диаграмма контейнеров'
+        description 'Диаграмма контейнеров системы мониторинга теплицы'
+        include *
+        include cnt_greenhouse.*
+    }
+}

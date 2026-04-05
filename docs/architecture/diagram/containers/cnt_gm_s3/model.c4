@@ -1,0 +1,9 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_s3 = container 'CNT_GM_S3' {
+            description 'S3 хранилище для архива видео с камер'
+            technology 'MinIO'
+            icon:tech:aws-s3
+        }
+    }
+}

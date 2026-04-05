@@ -1,0 +1,9 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_secrets = container 'CNT_GM_Secrets' {
+            description 'Контейнер для хранения секретов'
+            technology 'HashiCorp Vault'
+            icon:tech:hashicorp-vault
+        }
+    }
+}

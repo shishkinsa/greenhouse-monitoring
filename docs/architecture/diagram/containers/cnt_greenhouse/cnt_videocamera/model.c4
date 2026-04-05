@@ -1,0 +1,7 @@
+model {
+    extend cnt_greenhouse {
+        cnt_video_camera = video_camera 'CNT_Video_Camera' {
+            description 'Камера для сбора видеоданных'
+        }
+    }
+}

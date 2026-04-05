@@ -1,0 +1,17 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_savingservice = container 'CNT_GM_SavingService' {
+            description 'Сервис получения данных по датчикам и сохранения их в БД Clichouse'
+            technology 'ASP.NET Core, .NET 10'
+            icon: tech:dotnet
+
+            cnt_gm_savingservice -> cnt_gm_broker 'Read, Write data from sensor' {
+                technology '5672/AMQP via TLS'
+            }
+
+            cnt_gm_savingservice -> cnt_gm_timeseries_db 'Save data from sensor to timeseries database' {
+                technology '8123/TCP via TLS'
+            }
+        }
+    }
+}

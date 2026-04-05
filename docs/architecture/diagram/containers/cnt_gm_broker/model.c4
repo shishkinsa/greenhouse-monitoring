@@ -1,0 +1,9 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_broker = container 'CNT_GM_Broker' {
+            description "MQTT брокер"
+            technology "RabbitMQ"
+            icon:tech:rabbitmq
+        }
+    }
+}
