@@ -1,0 +1,85 @@
+// Связанные требования: employee_live_monitoring — US-01, FR-01; engineer_event_search — US-02, FR-02
+// Тип: LikeC4 dynamic view (behavior)
+// Аутентификация: OIDC Authorization Code + PKCE; детальный поток — docs/architecture/diagram/security/oidc-user-authentication.c4
+
+views {
+    dynamic view employee_live_monitoring {
+        title 'Сотрудник: оперативный мониторинг (live-видео и показания датчиков)'
+        description 'Вход через Identity (OIDC), данные через Web API из Redis и справочников БД, live-видео через go2rtc (WebRTC/MSE). Без поиска событий и архива.'
+
+        employee -> greenhouse_system.cnt_gm_web 'Открытие веб-приложения в браузере' {
+            notes '**US-01**, **FR-01**'
+        }
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_identity_web 'OIDC: вход (Authorization Code + PKCE)' {
+            notes '''
+            **Сводка шагов** (в одном блоке): редирект `/authorize` → форма Identity Web → callback в SPA с `code` → POST token endpoint (PKCE `code_verifier`) → токены в клиенте.
+            Связь из модели: **Authentication**, OpenID Connect. Развернутый поток: `docs/architecture/diagram/security/oidc-user-authentication.c4`.
+            '''
+        }
+
+        greenhouse_system.cnt_gm_identity_web -> greenhouse_system.cnt_gm_identity_webapi 'Authorize и проверка учётных данных (OpenIddict)'
+
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_identity_webapi 'access_token / id_token в SPA; готовность к вызовам API'
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Запросы метаданных теплиц/камер и актуальных показаний датчиков' {
+            notes '**FR-01**: температура, влажность, кислотность в реальном времени'
+        }
+
+        greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_identity_webapi 'Проверка access token (JWKS)'
+
+        parallel {
+            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_redis_db 'Онлайн-показания датчиков (кэш)' {
+                notes 'По архитектуре WebAPI читает последние значения из Redis'
+            }
+            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_db 'Справочники и метаданные (CRUD)' {
+                notes 'Списки теплиц, камер и пр. при необходимости для UI'
+            }
+        }
+
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Ответы API (JSON)'
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_only 'Live-видеопоток (WebSocket, MSE)' {
+            notes '**FR-01**: go2rtc, задержка в рамках NFR; без архивного сценария'
+        }
+    }
+
+    dynamic view engineer_event_search {
+        title 'Инженер: поиск событий по телеметрии и просмотр архива'
+        description 'Вход через Identity, выборка событий и архивной телеметрии через Web API и ClickHouse; при просмотре события — архивное видео через go2rtc history и MinIO S3.'
+
+        engineer -> greenhouse_system.cnt_gm_web 'Открытие веб-приложения' {
+            notes '**US-02**, **FR-02**'
+        }
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_identity_web 'OIDC: вход (Authorization Code + PKCE)' {
+            notes 'Тот же сводный поток, что у сценария сотрудника; детали — `docs/architecture/diagram/security/oidc-user-authentication.c4`.'
+        }
+
+        greenhouse_system.cnt_gm_identity_web -> greenhouse_system.cnt_gm_identity_webapi 'Authorize и проверка учётных данных (OpenIddict)'
+
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_identity_webapi 'Токены в SPA'
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Поиск событий: выражение по датчикам, теплицы, интервал' {
+            notes '**FR-02**: отклик UI ≤ 10 с (NFR-02)'
+        }
+
+        greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_identity_webapi 'Проверка access token (JWKS)'
+
+        greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_timeseries_db 'Запрос событий и архивной телеметрии (GraphQL)' {
+            notes '**FR-02**: ClickHouse по контейнерной модели'
+        }
+
+        greenhouse_system.cnt_gm_webapi <- greenhouse_system.cnt_gm_timeseries_db 'Список событий и данные для графиков'
+
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Результаты поиска в SPA'
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_history 'Воспроизведение архивного видео по событию' {
+            notes 'Отличается от live-сценария сотрудника: контейнер **WebRTCServer_History**'
+        }
+
+        greenhouse_system.cnt_gm_webrtcserver_history -> greenhouse_system.cnt_gm_s3 'Чтение сегментов архива (S3 API)' {
+            notes '**FR-02**: MinIO; запись/чтение сегментов по модели'
+        }
+    }
+}

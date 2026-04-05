@@ -1,0 +1,65 @@
+// Тип: LikeC4 dynamic view (security)
+// Тема: аутентификация пользователя (OIDC Authorization Code + PKCE, OpenIddict)
+// Примечание: тот же поток для ролей сотрудника и инженера; на диаграмме — представитель пользователя (actor employee).
+
+views {
+    dynamic view user_authentication_oidc {
+        title 'Аутентификация пользователя: OIDC (Authorization Code + PKCE) и доступ к Web API'
+        description """
+        Подробный сценарий входа в систему мониторинга: редирект из SPA на Identity Web (OIDC),
+        проверка учётных данных через Identity WebAPI и БД Identity, обмен authorization code на токены,
+        последующие вызовы CNT_GM_WebAPI с Bearer access token и валидация JWT через Identity (JWKS/metadata).
+        Стек: OpenIddict, ASP.NET Core, PostgreSQL (Identity DB), React SPA.
+        """
+
+        employee -> greenhouse_system.cnt_gm_web 'Открытие веб-приложения ИС (или переход к защищённому маршруту)' {
+            notes 'Пользователь (сотрудник или инженер) — см. `employee` / `engineer` в контекстной модели.'
+        }
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_identity_web 'HTTP-редирект на Identity: OIDC `/authorize` (client_id, scope, state, nonce, code_challenge / PKCE)' {
+            notes 'Связь из модели: **Authentication**, технология **OpenID Connect**.'
+        }
+
+        greenhouse_system.cnt_gm_identity_web -> greenhouse_system.cnt_gm_identity_webapi 'Запрос конфигурации и authorize: discovery, отображение UI входа' {
+            notes 'HTTPS, как в модели **Read, Write Data** между Identity Web и Identity WebAPI.'
+        }
+
+        employee -> greenhouse_system.cnt_gm_identity_web 'Ввод логина и пароля (или сценарий SSO, если настроен)' {
+            notes 'Интерактивная аутентификация в браузере (форма Identity Web).'
+        }
+
+        greenhouse_system.cnt_gm_identity_web -> greenhouse_system.cnt_gm_identity_webapi 'Передача учётных данных и параметров клиента на проверку' {
+            notes 'Внутренний вызов к OpenIddict: валидация пользователя и клиента SPA.'
+        }
+
+        greenhouse_system.cnt_gm_identity_webapi -> greenhouse_system.cnt_gm_identity_db 'Проверка пользователя, хэша пароля, блокировок; данные клиентов и разрешений' {
+            notes '**PostgreSQL**, TLS; хранение пользователей, клиентов OIDC, refresh-токенов.'
+        }
+
+        greenhouse_system.cnt_gm_identity_webapi <- greenhouse_system.cnt_gm_identity_db 'Учётная запись и политики доступа подтверждены'
+
+        greenhouse_system.cnt_gm_identity_web <- greenhouse_system.cnt_gm_identity_webapi 'Редирект с **authorization code** на callback SPA (redirect_uri)' {
+            notes 'После успешного входа OpenIddict выдаёт код авторизации для обмена на токены.'
+        }
+
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_identity_web 'Браузер возвращается в SPA: callback с `code` и `state` для проверки CSRF'
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_identity_webapi 'POST **token endpoint**: `grant_type=authorization_code`, code, **code_verifier** (PKCE), client_id' {
+            notes 'Обмен кода на **access_token**, **id_token**, **refresh_token** (JSON). Запрос идёт с SPA на Identity WebAPI (OpenIddict).'
+        }
+
+        greenhouse_system.cnt_gm_identity_webapi -> greenhouse_system.cnt_gm_identity_db 'Регистрация refresh token, при необходимости ротация и аудит выдачи токенов'
+
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_identity_webapi 'Ответ: токены; SPA сохраняет access token для вызовов API (и refresh по политике)'
+
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Запросы к API ИС: **Authorization: Bearer** access_token (HTTPS / GraphQL / WS по модели)' {
+            notes 'Модель: **HTTPS, WebSocket, GraphQL; Bearer access token**.'
+        }
+
+        greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_identity_webapi 'Проверка access token: подпись JWT (**JWKS**), issuer, audience, срок действия' {
+            notes 'Модель: **HTTPS, OIDC metadata, JWKS**; stateless-проверка на инстансах WebAPI.'
+        }
+
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Ответы API после успешной валидации токена и авторизации'
+    }
+}
