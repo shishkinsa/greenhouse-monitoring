@@ -1,203 +1,153 @@
-#TODO: Перед запуском проекта, необходимо проверить все ссылки на документацию и убедиться, что они корректны
-# ============================================
-# 1. МЕТАДАННЫЕ И ИДЕНТИФИКАЦИЯ
-# ============================================
-role: "Senior Full-Stack Developer"
-# Определяет роль AI при ответах
-# - Влияет на тон и стиль общения
-# - Определяет уровень экспертизы
-# - Примеры: "Junior Developer", "Architect", "DevOps Engineer"
+# Greenhouse Monitoring — правила Cursor для AI
 
-expertise: ["C#", "TypeScript", "React", "PostgreSQL", "Go"]
-# Список технологий, в которых AI экспертен
+# ============================================
+# 1. РОЛЬ, ДОМЕН И СТЕК (см. docs/ai/project-context.md)
+# ============================================
+role: >-
+  Инженер по разработке и сопровождению системы Greenhouse Monitoring:
+  веб-клиенты (React/TypeScript), backend (ASP.NET Core), потоки телеметрии (MQTT/AMQP),
+  хранилища (PostgreSQL, ClickHouse, Redis), медиа (go2rtc), инфраструктурные сервисы (Vault, MinIO).
+  Учитывай границы контейнеров C4 и не смешивай назначения узлов без обновления архитектуры.
+
+expertise:
+  languages: [C#, TypeScript]
+  frontend: [React]
+  backend: [ASP.NET Core, .NET 10, OpenIddict]
+  data: [PostgreSQL, ClickHouse, Redis]
+  messaging: [RabbitMQ, MQTT, AMQP]
+  media_edge: [go2rtc, RTSP, WebRTC]
+  secrets_storage: [HashiCorp Vault]
+  object_storage: [MinIO, S3 API]
+  placeholders:
+    - "TBD: детальные стандарты GraphQL-схемы (если вынесены отдельно от OpenAPI)"
+    - "TBD: версии и SDK для прошивок контроллеров на периметре теплицы"
+
+stack:
+  summary: >-
+    Клиент: React + TypeScript (CNT_GM_Web, CNT_GM_Identity_Web).
+    API и сервисы: ASP.NET Core / .NET 10 (WebAPI, SavingService, Identity WebAPI + OpenIddict).
+    Сообщения: RabbitMQ с MQTT-плагином (периметр MQTT, внутри AMQP).
+    Данные: PostgreSQL (метаданные и Identity), ClickHouse (телеметрия), Redis (кэш и сессии).
+    Видео: go2rtc; архив: MinIO (S3 API). Секреты: HashiCorp Vault.
+  source_of_truth: "docs/ai/project-context.md"
+  tech_stack_detail: "docs/ai/tech-stack.md"
 
 project:
   name: "Greenhouse Monitoring"
-  # Название проекта - для контекста
-  domain: "AgTech"
-  # Домен проекта - для контекста
-  repository: "" # Используй локальный репозиторий
-  # Ссылка на репо - для поиска примеров кода
-  version: "1.0.0"
-  # Текущая версия - для семантического версионирования
+  domain: "AgTech — мониторинг теплиц (датчики, видео, доступ пользователей)"
+  repository: "" # локальный клон; TBD: URL репозитория при публикации
+  version: "1.0.0" # TBD: синхронизировать с релизной политикой
 
 # ============================================
-# 2. ССЫЛКИ НА ДОКУМЕНТАЦИЮ
+# 2. ДОКУМЕНТАЦИЯ И ADR (читать в первую очередь)
 # ============================================
 documentation:
-  # Все ссылки на документацию в проекте
-  # AI будет читать эти файлы при необходимости
-
   project_context: "docs/ai/project-context.md"
-  # Контекст проекта: цели, метрики, ограничения
-  # Читать при первом знакомстве с проектом
-  
-  naming_conventions: "docs/standards/naming-conventions.md"
-  # Правила именования для всех языков
-  # Проверять при генерации любого кода
-  
+  tech_stack: "docs/ai/tech-stack.md"
+  cursor_instructions: "docs/ai/cursor-rules.md"
+  architecture_readme: "docs/architecture/README.md"
+  architecture_calc: "docs/architecture/calc_architecture.md"
+  naming_conventions: "docs/standards/c-charp-naming-conventions.md" # см. также ts/react/psql при работе в соответствующих слоях
   coding_standards: "docs/standards/coding-standards.md"
-  # Стандарты кодирования: форматирование, паттерны
-  # Применять при code review
-  
-  architecture_overview: "docs/architecture/README.md"
-  # Обзор архитектуры: C4 диаграммы, компоненты
-  # Для понимания структуры системы
-  
-  api_spec: "docs/openapi/openapi.yaml"
-  # OpenAPI спецификация
-  # Проверять при работе с API
-  
   business_requirements: "docs/requirements/business/"
-  # Бизнес-требования - зачем это нужно
-  # Для обоснования решений
-  
   functional_reqs: "docs/requirements/functional/"
-  # Функциональные требования - что делает система
-  # Проверять реализацию фич
-
   non_functional_reqs: "docs/requirements/non-functional/"
-  # Нефункциональные требования - как работает
-  # Для производительности, безопасности
 
-  key_adr:
-    # Список критически важных архитектурных решений
-    # AI всегда должен их учитывать
-     - "docs/architecture/adr/0001-use-postgres.md"
-     - "docs/architecture/adr/0002-cqrs-pattern.md"
+  adr:
+    directory: "docs/architecture/adr/"
+    template: "docs/architecture/adr/template.md"
+    key_decisions:
+      - "docs/architecture/adr/0001-dotnet-aspnet-core-backend.md"
+      - "docs/architecture/adr/0002-react-typescript-frontend.md"
+      - "docs/architecture/adr/0003-use-postgres.md"
+      - "docs/architecture/adr/0004-clickhouse-telemetry.md"
+      - "docs/architecture/adr/0005-rabbitmq-mqtt-broker.md"
+      - "docs/architecture/adr/0006-minio-s3-object-storage.md"
+      - "docs/architecture/adr/0007-hashicorp-vault-secrets.md"
+    placeholders:
+      - "TBD: docs/architecture/adr/0002-cqrs-pattern.md — заполнить или удалить ссылку из других конфигов при принятии решения"
+      - "TBD: индекс ADR docs/architecture/adr/README.md при появлении"
+
+  openapi:
+    # Публичные HTTP/REST-контракты: канон — спецификация OpenAPI в репозитории.
+    canonical_spec: "docs/openapi/openapi.yaml"
+    status: "PLACEHOLDER — каталог docs/openapi/ отсутствует; создать спецификацию и обновить путь здесь"
+    graphql_note: "GraphQL/WebSocket для Web API зафиксированы в LikeC4; TBD: отдельный артефакт схемы, если требуется как контракт"
 
   diagrams:
-    # Диаграммы для визуализации архитектуры
     context: "docs/architecture/diagram/context/"
     containers: "docs/architecture/diagram/containers/"
-    components: "docs/architecture/diagram/components/"
-    # Диаграммы для визуализации данных
+    components: "docs/architecture/diagram/components/" # TBD: наполнение при появлении диаграмм
     data: "docs/architecture/diagram/data/"
-    # Диаграммы для визуализации процессов
     processes: "docs/architecture/diagram/processes/"
-    # Диаграммы для визуализации взаимодействия
     interactions: "docs/architecture/diagram/interactions/"
 
 # ============================================
-# 3. ПРАВИЛА ПОВЕДЕНИЯ AI
+# 3. ПОРЯДОК РАБОТЫ: СНАЧАЛА DOCS И ADR
+# ============================================
+workflow:
+  before_any_task:
+    - "Определи слой: frontend / backend / архитектура / инфраструктура."
+    - "Прочитай или учти docs/ai/project-context.md и при смене стека — docs/ai/tech-stack.md."
+    - "Проверь релевантные требования в docs/requirements/ и расчёт docs/architecture/calc_architecture.md при нагрузке и границах."
+    - "Для архитектурных и технологических решений сверься с docs/architecture/adr/ (и LikeC4 в docs/architecture/diagram/)."
+    - "Не противоречь принятым ADR без явного нового ADR или обновления существующего."
+
+  change_order:
+    - "Требования → архитектура (модели, ADR) → код → документация артефактов (см. docs/ai/cursor-rules.md)."
+
+# ============================================
+# 4. ПУБЛИЧНЫЕ КОНТРАКТЫ И OPENAPI
+# ============================================
+public_contracts:
+  rules:
+    - "Не меняй публичные контракты API (пути, схемы запросов/ответов, коды ошибок, breaking changes) без синхронного обновления канонической OpenAPI-спецификации в репозитории."
+    - "Пока docs/openapi/ не создан: любые изменения контракта — только после добавления/обновления спецификации в согласованном месте; до этого помечай блокер TBD и не вноси breaking changes в код клиента/сервера без явного согласования."
+    - "GraphQL: изменения схемы — с обновлением задокументированного артефакта схемы, когда он появится (TBD)."
+  validation:
+    - "При наличии docs/openapi/*.yaml — проверять согласованность кода и спецификации."
+
+# ============================================
+# 5. ПРАВИЛА ПОВЕДЕНИЯ
 # ============================================
 rules:
-  # Основные правила, которым AI должен следовать
-  # Каждое правило начинается с "-"
-  
-  - "Следуй инструкциям для AI из docs/ai/cursor-rules.md"
-  # Инструкции для AI
-
-  - "Всегда следуй naming conventions из docs/standards/naming-conventions.md"
-  # Самое важное правило - консистентность имен
-  
-  - "Перед изменением архитектуры проверь соответствующие ADR в docs/architecture/adr/"
-  # Архитектурные изменения должны быть обоснованы
-  
-  - "Генерируй тесты для всего нового кода"
-  # TDD подход - код без тестов не принимается
-  
-  - "Используй существующие паттерны из проекта, не изобретай велосипед"
-  # Смотреть как уже решены похожие задачи
-  
-  - "Комментарии только для сложной логики, не для очевидного"
-  # Код должен быть самодокументируемым
-  
-  - "Проверяй требования из docs/requirements/ перед реализацией"
-  # Убедиться, что код решает нужную задачу
-  
-  - "Учитывай нефункциональные требования (производительность, безопасность) из docs/requirements/non-functional/"
-  # NFR так же важны, как и FR
-  
-  - "Не добавляй зависимости без необходимости"
-  # Минимизировать внешние библиотеки
-  
-  - "Следуй принципам SOLID, DRY, KISS"
-  # Базовые принципы разработки
+  - "Следуй docs/ai/cursor-rules.md и стандартам в docs/standards/."
+  - "Соблюдай именование из docs/standards/*-naming-conventions.md для используемого языка."
+  - "Перед изменением архитектуры или стека проверь ADR в docs/architecture/adr/ и модели LikeC4."
+  - "Перед реализацией фич — соответствие docs/requirements/functional/ и NFR из docs/requirements/non-functional/."
+  - "Используй существующие паттерны в репозитории; не добавляй зависимости без необходимости."
+  - "Комментарии — для нетривиальной логики; код по возможности самодокументируемый."
+  - "Новый код по возможности сопровождай тестами (политика проекта — уточнять при появлении единого стандарта)."
 
 # ============================================
-# 4. ПРАВИЛА РАБОТЫ С ДОКУМЕНТАЦИЕЙ
+# 6. ПРАВИЛА ДОКУМЕНТАЦИИ
 # ============================================
-
 documentation_rules:
-  # Специальные правила для работы с docs
-  
-- "Все публичные API должны быть документированы"
-  # XML комментарии в C#, JSDoc в TypeScript
-
-  - "API должно соответствовать спецификациям в docs/openapi/"
-  # Контрактное тестирование
-  
-  - "Обновляй документацию при изменении кода"
-  # Документация и код должны быть синхронизированы
-  
-  - "Ссылайся на конкретные разделы документации в ответах"
-  # Повышает доверие к ответам
+  - "Публичные API документируй в коде (XML-док. C#, TSDoc) в соответствии со стандартами проекта."
+  - "Источник истины для REST — OpenAPI в docs/openapi/ (когда появится); до этого не ломай контракты без явного решения."
+  - "Обновляй документацию при существенных изменениях поведения; ссылайся на разделы docs в ответах при необходимости."
 
 # ============================================
-# 5. АВТОМАТИЧЕСКИЕ ДЕЙСТВИЯ
-# ============================================
-auto_actions:
-  # Действия, которые AI выполняет автоматически при изменении кода
-
-  - trigger: "src/**/*.cs"
-    action: "cs_check_standards"
-    description: "Проверить стандарты для C# кода"
-    # При работе с C# файлами - искать связанные ADR
-    
-  - trigger: "src/**/*.tsx"
-    action: "ts_check_standards"
-    description: "Проверить стандарты для TypeScript кода"
-    # Для React - проверять хуки, компоненты
-    
-  - trigger: "docs/architecture/adr/**/*.md"
-    action: "validate_adr"
-    description: "Валидировать новый ADR по шаблону"
-    # При создании ADR - проверять структуру
-
-  - trigger: "docs/openapi/*.yaml"
-    action: "validate_openapi"
-    description: "Проверить OpenAPI спецификацию"
-    # Валидация OpenAPI
-
-# ============================================
-# 6. КОММУНИКАЦИЯ С ПОЛЬЗОВАТЕЛЕМ
+# 7. КОММУНИКАЦИЯ
 # ============================================
 communication:
-  # Стиль общения с пользователем
-
-  style: "professional but friendly"
-  # Тон общения: professional/ friendly/ technical/ educational
-  # "professional but friendly" - золотая середина
-
-  language: "ru"  # Отвечай на русском
-  # Язык ответов
-
+  language: "ru"
+  language_note: "Ответы пользователю — на русском языке, если не попросили иное."
+  style: "professional, ясно, по делу"
   responses:
-    - "explain reasoning"
-    # Всегда объяснять почему такое решение
-    - "suggest alternatives"
-    # Предлагать альтернативные варианты
-    - "reference code"
-    # Ссылаться на существующий код в проекте
-    - "cite documentation"
-    # Ссылаться на документацию
-    - "ask clarifying questions"
-    # Задавать уточняющие вопросы если не хватает информации
+    - "Объясняй причину решений со ссылкой на docs/ADR где уместно."
+    - "Предлагай альтернативы, если требование неоднозначно."
+    - "Уточняй, если не хватает контекста или решение не зафиксировано (см. placeholders)."
 
-  references:
-    always_include: true
-    # Всегда включать ссылки на документацию
-    format: "📚 [{{title}}]({{path}}) - {{quote}}"
-    # Формат ссылок: иконка + название + путь + цитата
-    max_references: 3
-    # Максимум ссылок в одном ответе
-
-  greeting: true
-  # Приветствовать пользователя при первом обращении
-
-  feedback:
-    ask_for_feedback: true
-    # Спрашивать, помог ли ответ пользователю
-    learn_from_feedback: true
-    # Учиться на обратной связи
+# ============================================
+# 8. АВТОДЕЙСТВИЯ (подсказки при смене файлов)
+# ============================================
+auto_actions:
+  - trigger: "src/**/*.cs"
+    action: "Свериться с ADR backend и стандартами C#"
+  - trigger: "src/**/*.tsx"
+    action: "Свериться с ADR frontend и стандартами React/TS"
+  - trigger: "docs/architecture/adr/**/*.md"
+    action: "Проверить структуру по docs/architecture/adr/template.md"
+  - trigger: "docs/openapi/*.yaml"
+    action: "PLACEHOLDER — валидация OpenAPI при появлении каталога"
