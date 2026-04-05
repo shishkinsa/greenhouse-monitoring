@@ -1,7 +1,7 @@
 model {
     extend greenhouse_system {
 
-        cnt_gm_web = service "CNT_GM_Web" {
+        cnt_gm_web = container 'CNT_GM_Web' {
             description "Web приложение ИС"
             technology "React, TypeScript"
             style {
@@ -14,18 +14,26 @@ model {
                 version '18.2.0'
                 deployment_target ['staging', 'production']
             }
+
+
+            this -[https]-> cnt_gm_identity_web 'Authentication'
+            {
+                technology 'OpenID Connect'
+            }
+            
+            employee -[https]-> cnt_gm_web 'Оперативный просмотр данных' {
+                technology 'opens in browser'
+            }
+            engineer -[https]-> cnt_gm_web 'Просмотр исторических данных' {
+                technology 'opens in browser'
+            }
+
+            cnt_gm_web -[https]-> cnt_gm_webapi 'Read, Write Data' {
+                technology 'HTTPS, WebSocket, GraphQL; Bearer access token'
+            }
         }
 
-        employee -[https]-> cnt_gm_web 'Оперативный просмотр данных' {
-            technology 'opens in browser'
-        }
-        engineer -[https]-> cnt_gm_web 'Просмотр исторических данных' {
-            technology 'opens in browser'
-        }
         
-        cnt_gm_web -[https]-> cnt_gm_webapi 'Read, Write Data' {
-            technology 'HTTPS, WebSocet, GraphQL'
-        }
     }
 
     

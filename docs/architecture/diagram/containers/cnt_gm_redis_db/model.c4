@@ -1,0 +1,8 @@
+model {
+    extend greenhouse_system {
+        cnt_gm_redis_db = cache "CNT_GM_Redis_DB" {
+            description "Кэш оперативных данных с датчиков; хранение данных серверной сессии"
+            technology "Redis"
+        }
+    }
+}

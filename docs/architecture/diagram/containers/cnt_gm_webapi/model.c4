@@ -1,9 +1,27 @@
 model {
     extend greenhouse_system {
-        cnt_gm_webapi = service "CNT_GM_WebAPI" {
+        cnt_gm_webapi = container 'CNT_GM_WebAPI' {
             description "Сервис WebApi"
             technology "ASP.NET Core, .NET 10"
             icon:tech:dotnet
+
+            this -[https]-> cnt_gm_redis_db 'Кэш датчиков, данные сессии'
+            {
+                technology '6379/TCP/RESP via TLS'
+            }
+
+            this -[https]-> cnt_gm_identity_webapi 'Проверка access token'
+            {
+                technology 'HTTPS, OIDC metadata, JWKS'
+            }
+
+            this -> cnt_gm_db 'Read data from sensor to analyse via GraphQL'{
+                technology '8443/TCP via TLS'
+            }
+
+            this -> cnt_gm_timeseries_db 'Save data from sensor to timeseries database' {
+                technology '8123/TCP via TLS'
+            }
         }
     }
 }
