@@ -1,30 +1,35 @@
 model {
     extend greenhouse_system {
         cnt_gm_webapi = container 'CNT_GM_WebAPI' {
-            description "Сервис WebApi"
-            technology "ASP.NET Core, .NET 10"
-            icon:tech:dotnet
+            description """
+            Сервис Web API. Не менее двух инстансов за балансировщиком (NFR-03); узлы stateless, сессии и кэш датчиков — в Redis.
+            Health checks исключают нездоровые инстансы из пула; при появлении sticky — только при необходимости для долгих WS (иначе не требуется).
+            """
+            technology 'ASP.NET Core, .NET 10'
+            icon: tech:dotnet
 
-            cnt_gm_webapi -[https]-> cnt_gm_redis_db 'Кэш датчиков, данные сессии'
-            {
+            metadata {
+                load_balancing '2+ инстанса за L4/L7 LB; readiness/liveness; горизонтальное масштабирование без привязки состояния к узлу'
+            }
+
+            cnt_gm_webapi -[https]-> cnt_gm_redis_db 'Чтение онлайн-показаний датчиков, сессии' {
                 technology '6379/TCP/RESP via TLS'
             }
 
-            cnt_gm_webapi -[https]-> cnt_gm_identity_webapi 'Проверка access token'
-            {
+            cnt_gm_webapi -[https]-> cnt_gm_identity_webapi 'Проверка access token' {
                 technology 'HTTPS, OIDC metadata, JWKS'
             }
 
-            cnt_gm_webapi -> cnt_gm_db 'Read data from sensor to analyse via GraphQL' {
+            cnt_gm_webapi -> cnt_gm_db 'Метаданные и справочники (CRUD)' {
+                technology '5432/TCP via TLS'
+            }
+
+            cnt_gm_webapi -> cnt_gm_timeseries_db 'Поиск событий и архив телеметрии (GraphQL)' {
                 technology '8443/TCP via TLS'
             }
 
-            cnt_gm_webapi -> cnt_gm_timeseries_db 'Save data from sensor to timeseries database' {
-                technology '8123/TCP via TLS'
-            }
-
-            cnt_gm_webapi -> cnt_gm_broker 'Read data from  sensor online' {
-                technology '5672/AMQP via TLS'
+            cnt_gm_webapi -> cnt_gm_secrets 'Получение секретов сервиса' {
+                technology 'HTTPS, Vault API'
             }
         }
     }

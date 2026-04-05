@@ -2,7 +2,10 @@ model {
     extend greenhouse_system {
 
         cnt_gm_web = container 'CNT_GM_Web' {
-            description "Web приложение ИС"
+            description """
+            Web-приложение ИС. Клиентский трафик приходит на reverse proxy / балансировщик (TLS на периметре);
+            статика и SPA — за одним или несколькими origin-инстансами или из object storage + CDN (по среде).
+            """
             technology "React, TypeScript"
             style {
                 icon: tech:react
@@ -13,6 +16,7 @@ model {
                 language 'TypeScript'
                 version '18.2.0'
                 deployment_target ['staging', 'production']
+                load_balancing 'Периметр: reverse proxy / L7 LB; TLS termination на edge; при необходимости горизонталь раздачи статики'
             }
 
 
@@ -34,12 +38,12 @@ model {
 
             cnt_gm_web -> cnt_gm_webrtcserver_only 'Получение видеоконтента'
             {
-                technology 'WebSocet, MSE'
+                technology 'WebSocket, MSE'
             }
 
             cnt_gm_web -> cnt_gm_webrtcserver_history 'Получение видеоконтента для истории'
             {
-                technology 'WebSocet, MSE'
+                technology 'WebSocket, MSE'
             }
         }
 

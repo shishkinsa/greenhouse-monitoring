@@ -5,8 +5,8 @@ model {
             technology 'go2rtc'
             icon:tech:webrtc
 
-            cnt_gm_webrtcserver_history -> cnt_gm_s3 'Сохранение видеоконтента' {
-                technology 'HTTP, S3'
+            cnt_gm_webrtcserver_history -> cnt_gm_s3 'Запись сегментов архива и чтение при воспроизведении' {
+                technology 'HTTPS, S3 API'
             }
 
             cnt_gm_webrtcserver_history -> cnt_greenhouse.cnt_video_camera 'Получение видеоконтента' {

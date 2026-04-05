@@ -1,8 +1,11 @@
 model {
     extend greenhouse_system {
         cnt_gm_broker = container 'CNT_GM_Broker' {
-            description "MQTT брокер"
-            technology "RabbitMQ"
+            description """
+            Брокер сообщений: контроллеры теплиц публикуют телеметрию по MQTT (требования, calc_architecture).
+            RabbitMQ с включённым MQTT-плагином: внешний MQTT для устройств, внутренние сервисы — подписчики AMQP.
+            """
+            technology "RabbitMQ (MQTT plugin)"
             icon:tech:rabbitmq
         }
     }
