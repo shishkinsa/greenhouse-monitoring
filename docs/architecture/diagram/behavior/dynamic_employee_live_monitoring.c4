@@ -29,11 +29,12 @@ views {
         greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_identity_webapi 'Проверка access token (JWKS)'
 
         parallel {
-            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_redis_db 'Онлайн-показания датчиков (кэш)' {
-                notes 'По архитектуре WebAPI читает последние значения из Redis'
-            }
             greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_db 'Справочники и метаданные (CRUD)' {
                 notes 'Списки теплиц, камер и пр. при необходимости для UI'
+            }
+
+            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_redis_db 'Онлайн-показания датчиков (кэш)' {
+                notes 'По архитектуре WebAPI читает последние значения из Redis'
             }
         }
 
@@ -61,7 +62,7 @@ views {
         greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_identity_webapi 'Токены в SPA'
 
         greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Поиск событий: выражение по датчикам, теплицы, интервал' {
-            notes '**FR-02**: отклик UI ≤ 10 с (NFR-02)'
+            notes '**FR-02**, отклик ≤ 10 с (NFR-02). По модели контейнера к WebAPI допускаются **HTTPS** и **WebSocket** (GraphQL); для типичного запроса поиска достаточно синхронного HTTPS; WS — если используете GraphQL over WebSocket / подписки.'
         }
 
         greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_identity_webapi 'Проверка access token (JWKS)'
@@ -74,8 +75,8 @@ views {
 
         greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Результаты поиска в SPA'
 
-        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_history 'Воспроизведение архивного видео по событию' {
-            notes 'Отличается от live-сценария сотрудника: контейнер **WebRTCServer_History**'
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_history 'Архивное видео (WebSocket, MSE), go2rtc history' {
+            notes 'Как в модели **cnt_gm_web** → history: **WebSocket, MSE**. Отличается от live: контейнер **WebRTCServer_History**.'
         }
 
         greenhouse_system.cnt_gm_webrtcserver_history -> greenhouse_system.cnt_gm_s3 'Чтение сегментов архива (S3 API)' {
