@@ -23,7 +23,12 @@ while IFS= read -r -d '' dir; do
     rel_out="docs/public/likec4/${name}"
     mkdir -p "${ROOT}/${rel_out}"
     echo "==> likec4: ${rel_src} -> ${rel_out}"
-    (cd "${ROOT}" && npx likec4 export png -o "${rel_out}" "${rel_src}")
+    if [[ "${name}" == "infrastructure" ]]; then
+      # Проект с include из context/containers: экспорт только deployment view, cwd = папка проекта (см. likec4.config.json).
+      (cd "${ROOT}/${rel_src}" && npx likec4 export png -o "${ROOT}/${rel_out}" -f production_deployment .)
+    else
+      (cd "${ROOT}" && npx likec4 export png -o "${rel_out}" "${rel_src}")
+    fi
     exported=$((exported + 1))
   fi
 done < <(find "${DIAGRAM_ROOT}" -mindepth 1 -maxdepth 1 -type d -print0)

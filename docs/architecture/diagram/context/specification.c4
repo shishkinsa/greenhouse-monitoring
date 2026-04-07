@@ -65,4 +65,46 @@ specification {
     relationship https
     relationship mqtt
     relationship rtsp
+
+     deploymentNode environment {
+        style {
+            color sky
+        }
+    }
+
+    deploymentNode zone {
+        style {
+            color gray
+        }
+    }
+
+    deploymentNode namespace {
+        style {
+            color gray
+        }
+    }
+
+    deploymentNode kubernetes {
+        style {
+            icon tech:kubernetes
+        }
+    }
+
+    deploymentNode vm {
+        notation 'Виртуальная машина / узел данных'
+    }
+
+    deploymentNode load_balancer {
+        notation 'Балансировщик нагрузки / reverse proxy'
+        style {
+            icon tech:nginx
+        }
+    }
+
+    deploymentNode deployment {
+        notation 'Kubernetes Deployment (ReplicaSet → Pods)'
+        style {
+            color indigo
+        }
+    }
 }

@@ -1,0 +1,153 @@
+openapi: "3.0.3"
+info:
+  title: API Greenhouse Monitoring
+  version: 1.0.1
+  description: "14.01.2026"
+tags:
+  - name: Common
+    description: Общие операции
+  - name: DigitalController
+    description: Операции по получению данных с цифровых датчиков
+  - name: VideoCamera
+    description: Операции по получению видеоконтента
+paths:
+  /api/v1/organisations/{id}/greenhouses:
+    description: Получить список теплиц
+    get:
+      summary: Список теплиц
+      tags:
+        - Common
+      parameters:
+        - name: id
+          description: Идентификатор организации пользователя
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: GreenhousesDTO
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - id
+                    - name
+                    - organisationId
+                  properties:
+                    id:
+                      description: Идентификатор теплицы
+                      type: integer
+                      example: 1
+                    name:
+                      description: Наименование теплицы
+                      type: string
+                      example: Теплица 1
+                    organisationId:
+                      description: Идентификатор организации
+                      type: integer
+                      example: 1
+                    address:
+                      description: Адрес теплицы
+                      type: string
+                      example: Россия, Московская область, город Рязань
+  /api/v1/greenhouses/{id}/video-cameras:
+    description: Получить список видеокамер в теплице
+    get:
+      summary: Список видеокамер в теплице
+      tags:
+        - Common
+      parameters:
+        - name: id
+          description: Идентификатор теплцы
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: VideoCamerasDTO
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - id
+                    - name
+                    - greenhouseId
+                    - ipAddress
+                  properties:
+                    id:
+                      description: Идентификатор камеры
+                      type: integer
+                      example: 1
+                    name:
+                      description: Наименование камеры
+                      type: string
+                      example: Камера 1
+                    greenhouseId:
+                      description: Идентификатор теплицы
+                      type: integer
+                      example: 1
+                    ipAddress:
+                      description: IP адрес теплицы
+                      type: string
+                      example: 10.14.225.101
+  /api/v1/video-cameras/{id}/video:
+    description: Просмотр видеопотока с камеры
+    get:
+      summary: Получение видеопотока с камеры из теплицы
+      tags:
+        - VideoCamera
+      responses:
+        "101":
+          description: Switching Protocols
+  /api/v1/video-cameras/{id}/video/archive?{time_begin}&{time_end}/video:
+    description: Получить архивное видео с камер
+    get:
+      summary: Получение архивного видео с камеры
+      tags:
+        - VideoCamera
+      responses:
+        "101":
+          description: Switching Protocols
+  /api/v1/greenhouses/{id}/sensor-online-values:
+    description: Получение данных с датчиков с теплицы
+    get:
+      summary: Получение данных с датчиков с теплицы
+      tags:
+       - DigitalController
+      responses:
+        "101":
+          description: Switching Protocols
+  /api/v1/sensor-analytics:
+    description: Анализ данных по датчикам
+    post:
+      summary: "GraphQL. Данные по датчикам в соответсвии с запровом GraphQL"
+      tags:
+        - DigitalController
+      parameters:
+        - in: body
+          name: body
+          description: "GraphQL query"
+          required: true
+          schema:
+            type: "object"
+            properties:
+              query:
+                type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  data:
+                    type: "object"

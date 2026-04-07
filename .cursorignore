@@ -16,6 +16,9 @@ pnpm-lock.yaml
 .yarn/
 .pnpm/
 
+# Promts
+**/prompt-*.example.md
+
 # Go зависимости
 vendor/                    # если используете vendor mode
 pkg/mod/                   # кэш Go модулей
