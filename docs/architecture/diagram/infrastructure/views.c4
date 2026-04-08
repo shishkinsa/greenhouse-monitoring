@@ -1,17 +1,19 @@
 views {
     deployment view production_deployment {
-        title 'Развёртывание: production'
+        title "Развёртывание: production"
         description """
-        Физическое развёртывание ИС мониторинга теплиц: периметр **HTTPS 443** (SPA+API, Identity, go2rtc) и отдельный **периметр MQTT** к RabbitMQ; **реплики** веб/API, Identity, SavingService, go2rtc (live/history), MinIO distributed, Vault Raft — см. узлы и сводку в `production-deployment.c4`; HA RabbitMQ, PostgreSQL primary/replica, **ClickHouse (2 ноды) + Keeper**, **Redis + Sentinel**.
-
-        Обоснование нагрузки и числа узлов: **docs/architecture/calc_architecture.md**.
+        Физическое развёртывание ИС: периметр **443** и **MQTT 8883**, классы трафика, внутренние порты и политика Identity DB — в тексте среды **Production** в `production-deployment.c4`. Деталь протоколов контейнеров — в `docs/architecture/diagram/containers/`.
         """
+
         include production.**
 
         // Не показывать логические рёбра из модели контейнеров (на deployment достаточно периметра и узлов).
         exclude greenhouse_system.cnt_gm_web -[https]-> greenhouse_system.cnt_gm_identity_web
         exclude greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_only
-
+       
         autoLayout LeftRight
+        style production.private.k8s.app.webapp {
+        border none
+      }
     }
 }

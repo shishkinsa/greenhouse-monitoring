@@ -4,119 +4,100 @@
 deployment {
     environment production 'Production' {
         description """
-        Целевое развёртывание по **calc_architecture.md** и NFR-03: отказоустойчивость (2+ инстанса веб/API, RabbitMQ HA, PostgreSQL 1+1).
+        Целевое развёртывание production по docs/architecture/calc_architecture.md и NFR-03 (отказоустойчивость).
 
-        **Веб-слой:** SPA (React) и **CNT_GM_WebAPI** в **одном процессе ASP.NET Core на Kestrel** на каждом поде. На диаграмме — **один узел деплоя** с двумя `instanceOf`; фактически в кластере **2 инстанса** (реплики подов) за балансировщиком для HA (NFR-03, calc_architecture.md).
+        Сводка реплик: веб+API `2`, Identity `2`, SavingService `2`, go2rtc live/history по `2`, MinIO distributed `4`, Vault Raft `3`, Redis `1+1`, Sentinel `3`, RabbitMQ `2`, PostgreSQL `1+1`, ClickHouse data `2`, ClickHouse Keeper `3` (отдельные узлы кворума).
 
-        **Identity:** **CNT_GM_Identity_Web** и **CNT_GM_Identity_WebAPI** в **одном процессе Kestrel** на под (статика Identity SPA + OpenIddict/Web API); **несколько подов** (`replicas: 2`) за периметром для HA — см. узел `identity_webapp`.
+        Классы трафика (чтобы не смешивать с пользовательским L7): (1) Браузер → `edge` 443/TLS — SPA, API, OIDC, WSS к go2rtc. (2) Контроллеры теплиц → `edge_mqtt` 8883/TCP (TLS/MQTT) → RabbitMQ — не через HTTP Ingress. (3) IP-камеры → поды go2rtc по RTSP/RTP из сегмента VLAN камер (см. узлы WebRTC); пользовательский периметр сюда не относится.
 
-        **ClickHouse:** 2 серверных ноды данных + ансамбль **ClickHouse Keeper** (кворум, 3 ноды) для координации репликации.
-
-        **Redis:** primary/replica и **Redis Sentinel** в **Kubernetes** (сессии и кэш датчиков; отказоустойчивость).
-
-        **MinIO (CNT_GM_S3)**, **Vault (CNT_GM_Secrets)**, **Redis (CNT_GM_Redis_DB)** и **брокер RabbitMQ (CNT_GM_Broker)** развёрнуты **в том же Kubernetes-кластере**, что и прикладные поды (отдельные workload / namespace по политике среды).
-
-        **Сводка реплик (целевой прод, NFR-03):** веб+API `2`; Identity `2`; SavingService `2`; go2rtc live `2`; go2rtc history `2`; MinIO distributed `4` (или иной согласованный в ТП минимум для отказоустойчивого режима); Vault Raft `3`; Redis data `1` primary + `1` replica; Sentinel `3`; RabbitMQ кластер `2` узла; PostgreSQL `1+1`; ClickHouse data `2` + Keeper `3`.
-
-        **Периметр:** пользовательский трафик — **443/TLS** на общий L7 (host/path → SPA, API, Identity, go2rtc). Поток **MQTT от контроллеров** — отдельный вход **edge_mqtt** (часто **8883/TCP TLS**; альтернатива — L4 NLB → Service RabbitMQ), чтобы не смешивать с HTTP-маршрутизацией.
+        Внутренние порты (поды → сервисы, деталь — в `docs/architecture/diagram/containers/*/model.c4`): Redis 6379, PostgreSQL 5432, RabbitMQ AMQP 5672, ClickHouse HTTP 8123 (запись SavingService) / 8443 (GraphQL WebAPI), Vault HTTPS (часто 8200 в кластере), MinIO S3 HTTPS (типично 9000 или 443 за Service). Между ВМ: репликация PG 5432, Keeper 9181, координация CH — ансамбль Keeper.
         """
 
         load_balancer edge 'Периметр (reverse proxy / L7)' {
-            technology 'Nginx, Traefik, Envoy или облачный ALB/NLB'
-            description """
-            TLS termination, маршрутизация по **Host/Path** на upstream: **CNT_GM_Web**+**CNT_GM_WebAPI**, **Identity**, **go2rtc** (live/history); WebSocket (GraphQL, сигналинг WebRTC). Health checks upstream (см. calc_architecture.md, «Балансировка нагрузки»).
-
-            Один периметрный объект на схеме; фактически — правила Ingress/маршрутов к разным Service в кластере.
-            """
+            technology 'Nginx'
+            description "TLS termination, маршрутизация по Host/Path на upstream: CNT_GM_Web, Identity, go2rtc (live/history); WebSocket (GraphQL, сигналинг WebRTC)"
         }
 
         load_balancer edge_mqtt 'Периметр MQTT (контроллеры)' {
-            technology 'NLB / Ingress TCP / reverse proxy stream'
-            description 'Терминация **TLS** и проксирование **MQTT** к кластеру RabbitMQ (плагин MQTT). Типичный порт **8883/TCP** (или политика сети/фаервола — в ТП); контроллеры — см. CNT_Digital_Controller.'
+            technology 'Ingress TCP'
+            description 'Терминация TLS и проксирование MQTT к кластеру RabbitMQ (плагин MQTT). Типичный порт 8883/TCP'
         }
 
         zone private 'Приватная сеть (VPC / data center)' {
-            kubernetes k8s 'Kubernetes cluster' {
-                description 'Прикладные поды, MinIO, Vault, Redis и RabbitMQ (MQTT/AMQP) — в одном кластере (изоляция по namespace при необходимости).'
+            kubernetes k8s 'Kubernetes кластер' {
+                description """
+                Прикладные StatefulSet/Deployment поды и in-cluster зависимости (отдельные namespace при политике среды).
 
-                zone app 'Сервисы приложения и in-cluster зависимости' {
-                    deployment webapp 'Веб + API (основное приложение)' {
+                Сервисные связи внутри VPC (ClusterIP / DNS): WebAPI и SavingService к Redis, брокеру, БД, Vault, MinIO — по портам из сводки в описании среды Production; на этой диаграмме не дублируются отдельными рёбрами, чтобы не перегружать схему.
+                """
+
+                zone app 'Сервисы приложения' {
+                    deployment webapp 'Веб + API (основное приложение), replicas: 2' {
                         technology 'Kubernetes Deployment / ReplicaSet'
-                        description """
-                        **2 инстанса** (два пода с одинаковым образом, `replicas: 2`) за периметром (L7); каждый под — один контейнер/процесс **Kestrel**: статика SPA и **CNT_GM_WebAPI**.
-
-                        Логически на схеме контейнеров два контейнера; здесь два `instanceOf` на одном узле деплоя.
-                        """
+                        description "Каждый под — один контейнер/процесс Kestrel: статика SPA и CNT_GM_WebAPI"
                         web = instanceOf greenhouse_system.cnt_gm_web
                         api = instanceOf greenhouse_system.cnt_gm_webapi
                     }
 
-                    deployment saving 'SavingService' {
+                    deployment saving 'SavingService, replicas: 2' {
                         technology 'Kubernetes Deployment'
-                        description """
-                        Потребитель **AMQP**; горизонтально масштабируемый stateless-воркер.
-
-                        **Реплики:** `replicas: 2` (минимум для переживаемости сбоев узла/пода и rolling update без простоя обработки очереди; при росте нагрузки — увеличение `replicas` и/или HPA).
-                        """
+                        description "Потребитель AMQP; горизонтально масштабируемый stateless-воркер"
                         instanceOf greenhouse_system.cnt_gm_savingservice
                     }
 
-                    deployment webrtc_live 'WebRTC (live)' {
+                    deployment webrtc_live 'WebRTC (live), replicas: 2' {
                         technology 'Kubernetes Deployment'
                         description """
-                        **go2rtc** (live). За периметром — тот же **443/TLS**, маршрут на Service (WSS/HTTPS).
+                        go2rtc (live). Браузер — 443/TLS на `edge` → Service (WSS/HTTPS, сигналинг/MSE).
 
-                        **Реплики:** `replicas: 2` (NFR-03: отказоустойчивость медиа-слоя; sticky session при необходимости — на L7). RTSP/UDP к камерам — из подсети кластера/медиа-VLAN, не через браузерный периметр.
+                        Камеры (полевой трафик): приём RTSP с камер — 554/TCP, медиа 5004–5005/UDP (см. модель контейнера); источники — из VLAN/сегмента видеонаблюдения, маршрутизация в подсеть кластера задаётся в ТП (не путать с пользовательским L7).
                         """
                         instanceOf greenhouse_system.cnt_gm_webrtcserver_only
                     }
 
-                    deployment webrtc_hist 'WebRTC (архив)' {
+                    deployment webrtc_hist 'WebRTC (архив), replicas: 2' {
                         technology 'Kubernetes Deployment'
                         description """
-                        **go2rtc** (архив), чтение сегментов из **MinIO**.
+                        go2rtc (архив), чтение сегментов из MinIO (S3 API из кластера).
 
-                        **Реплики:** `replicas: 2` (аналогично live: HA воспроизведения архива).
+                        Камеры: те же RTSP/RTP порты, что и для live, если архив пишется с камер напрямую; иначе — только чтение из MinIO по внутреннему HTTPS.
                         """
                         instanceOf greenhouse_system.cnt_gm_webrtcserver_history
                     }
 
-                    deployment identity_webapp 'Инстанс Identity (SPA + API)' {
+                    deployment identity_webapp 'Инстанс Identity (SPA + API), replicas: 2' {
                         technology 'Kubernetes Deployment'
-                        description """
-                        Один контейнер/процесс **Kestrel** на под: статика Identity UI и **CNT_GM_Identity_WebAPI** (два `instanceOf` на схеме).
+                        description "Один контейнер/процесс Kestrel на под: статика Identity UI и CNT_GM_Identity_WebAPI"
 
-                        **Реплики:** `replicas: 2` (stateless за L7; состояние сессий/клиентов — в **Identity DB** и политиках OpenIddict; без обязательного sticky при корректной конфигурации OIDC).
-                        """
                         id_web = instanceOf greenhouse_system.cnt_gm_identity_web
                         id_api = instanceOf greenhouse_system.cnt_gm_identity_webapi
                     }
 
-                    deployment minio 'MinIO (S3)' {
+                    deployment minio 'MinIO (S3), replicas: 4' {
                         technology 'StatefulSet / MinIO Operator (distributed)'
                         description """
                         S3-совместимое хранилище архива видео.
 
-                        **Реплики / топология:** режим **distributed** (типично **4** StatefulSet-пода с erasure coding) — снижает SPOF по сравнению с single-node. Упрощённый вариант (1 под) допустим только как промежуточный, с явным риском и планом backup/DR в ТП.
+                        Реплики / топология: режим distributed (типично 4 StatefulSet-пода с erasure coding) — снижает SPOF по сравнению с single-node. Упрощённый вариант (1 под) допустим только как промежуточный, с явным риском и планом backup/DR в ТП.
                         """
                         instanceOf greenhouse_system.cnt_gm_s3
                     }
 
-                    deployment vault_secrets 'Vault (секреты)' {
+                    deployment vault_secrets 'Vault (секреты), replicas: 3' {
                         technology 'StatefulSet / Helm, integrated storage'
                         description """
-                        HashiCorp Vault в режиме **HA** (**Raft**): типично **`replicas: 3`** серверов Vault в кластере (кворум, без единой точки отказа для control plane секретов). Клиенты приложений — по внутреннему DNS/Service (**HTTPS**, порт из политики среды, напр. **8200** внутрикластерно).
+                        HashiCorp Vault в режиме HA (Raft): типично 3 серверов Vault в кластере (кворум, без единой точки отказа для control plane секретов). Клиенты приложений — по внутреннему DNS/Service (HTTPS, порт из политики среды, напр. 8200 внутрикластерно).
                         """
                         instanceOf greenhouse_system.cnt_gm_secrets
                     }
                 }
 
-                zone messaging 'RabbitMQ (HA)' {
-                    description 'Кластер из **2** узлов в Kubernetes (StatefulSet; MQTT-плагин для контроллеров, AMQP для сервисов). Внутри кластера: **5672** (AMQP), **1883/8883** (MQTT — политика TLS на периметре).'
+                zone messaging 'RabbitMQ, replicas: 2' {
+                    description 'Кластер из 2 узлов в Kubernetes (StatefulSet; MQTT-плагин для контроллеров, AMQP для сервисов). Внутри кластера: 5672 (AMQP), 1883/8883 (MQTT — политика TLS на периметре).'
 
                     deployment rmq1 'RabbitMQ узел 1' {
                         technology 'StatefulSet в Kubernetes'
-                        description 'Узел 1 кластера (**quorum**/политика зеркалирования — в ТП).'
+                        description 'Узел 1 кластера (quorum/политика зеркалирования — в ТП).'
                         instanceOf greenhouse_system.cnt_gm_broker
                     }
 
@@ -128,7 +109,7 @@ deployment {
                 }
 
                 zone redis_ha 'Redis + Sentinel' {
-                    description 'Redis и Sentinel как поды в кластере (StatefulSet/Deployment, headless Service при необходимости). **Реплики данных:** 1 primary + 1 replica; **Sentinel:** `replicas: 3` (кворум failover).'
+                    description 'Redis и Sentinel как поды в кластере (StatefulSet/Deployment, headless Service при необходимости). Реплики данных: 1 primary + 1 replica; Sentinel: replicas: 3 (кворум failover).'
 
                     deployment redis_primary 'Redis (primary)' {
                         technology 'StatefulSet в Kubernetes'
@@ -142,61 +123,93 @@ deployment {
                         instanceOf greenhouse_system.cnt_gm_redis_db
                     }
 
-                    deployment sentinel1 'Sentinel' {
+                    deployment sentinel1 'Sentinel 1' {
                         technology 'Deployment в Kubernetes'
-                        description 'Экземпляр 1 из **3** (кворум).'
+                        description 'Экземпляр 1 из **3** (кворум failover). Порт Sentinel по умолчанию **26379/TCP** (TLS — по политике). Клиенты приложений подключаются к **Redis 6379** (Service/имя мастера); обнаружение мастера — через Sentinel API, без отдельной линии на диаграмме контейнеров.'
                     }
 
-                    deployment sentinel2 'Sentinel' {
+                    deployment sentinel2 'Sentinel 2' {
                         technology 'Deployment в Kubernetes'
                         description 'Экземпляр 2 из **3**.'
                     }
 
-                    deployment sentinel3 'Sentinel' {
+                    deployment sentinel3 'Sentinel 3' {
                         technology 'Deployment в Kubernetes'
-                        description 'Экземпляр 3 из **3**; нечётное число для кворума решений.'
+                        description 'Экземпляр 3 из **3**; нечётное число для кворума.'
                     }
                 }
             }
 
             zone relational 'PostgreSQL (метаданные)' {
                 vm pg_primary 'PostgreSQL primary' {
+                    technology 'Rocky Linux 9'
                     instanceOf greenhouse_system.cnt_gm_db
                 }
 
                 vm pg_replica 'PostgreSQL replica' {
-                    instanceOf greenhouse_system.cnt_gm_db
+                    technology 'Rocky Linux 9'
+                    instanceOf greenhouse_system.cnt_gm_db {
+                        style {
+                            color muted
+                        }
+                    }
+                }
+
+                pg_primary -> pg_replica 'Replication' {
+                    technology '5432/TCP via TLS'
+                    description 'Replication for metadata and reference data'
                 }
             }
 
             zone identity_db 'Identity DB' {
-                vm id_db {
+                description 'Выделенная ВМ под БД Identity (изоляция от метаданных приложения). Для снижения SPOF при жёстком SLA: **реплика read-only** / standby, резервное копирование и RTO/RPO — фиксируются в ТП; на схеме — минимальный состав узла.'
+
+                vm id_db 'PostgreSQL (Identity)' {
+                    technology 'Rocky Linux 9'
+                    description """
+                    Экземпляр PostgreSQL для OpenIddict / учётных записей.
+
+                    Надёжность: при одном узле зафиксировать политику backup (и при необходимости streaming replica на вторую ВМ в той же зоне). Порт клиентов — 5432/TCP (TLS), см. CNT_GM_Identity_WebAPI.
+                    """
                     instanceOf greenhouse_system.cnt_gm_identity_db
                 }
             }
 
             zone clickhouse 'ClickHouse + Keeper' {
                 vm ch_node1 'ClickHouse сервер 1' {
+                    technology 'Rocky Linux 9'
                     instanceOf greenhouse_system.cnt_gm_timeseries_db
+                    
                 }
 
                 vm ch_node2 'ClickHouse сервер 2' {
+                    technology 'Rocky Linux 9'
                     instanceOf greenhouse_system.cnt_gm_timeseries_db
                 }
 
-                vm keeper1 'ClickHouse Keeper' {
+                vm keeper1 'ClickHouse Keeper 1' {
                     technology 'clickhouse-keeper'
-                    description 'Узел 1 ансамбля Keeper (кворум).'
+                    description 'Узел 1 ансамбля Keeper (кворум **3** ноды; не на одной ВМ).'
                 }
 
-                vm keeper2 'ClickHouse Keeper' {
+                vm keeper2 'ClickHouse Keeper 2' {
                     technology 'clickhouse-keeper'
                     description 'Узел 2 ансамбля Keeper.'
                 }
 
-                vm keeper3 'ClickHouse Keeper' {
+                vm keeper3 'ClickHouse Keeper 3' {
                     technology 'clickhouse-keeper'
                     description 'Узел 3 ансамбля Keeper (нечётное число для кворума).'
+                }
+
+                ch_node1 -> keeper1 'Координация (ансамбль Keeper)' {
+                    technology '9181/TCP via TLS'
+                    description 'В конфигурации — эндпоинты **keeper1…keeper3** (кворум).'
+                }
+
+                ch_node2 -> keeper1 'Координация (ансамбль Keeper)' {
+                    technology '9181/TCP via TLS'
+                    description 'Тот же ансамбль **keeper1…keeper3**.'
                 }
             }
 
@@ -219,7 +232,7 @@ deployment {
         }
 
         production.edge_mqtt -> production.private.k8s.messaging 'TLS/MQTT → брокер' {
-            technology '8883/TCP (типично) или политика сети'
+            technology '8883/TCP via TLS'
         }
     }
 }
