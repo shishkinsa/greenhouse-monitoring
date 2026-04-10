@@ -2,7 +2,7 @@
 
 Свод основан на моделях LikeC4 в `docs/architecture/diagram/containers/` и `docs/architecture/diagram/context/`. При смене стека сначала обновляют архитектурные модели и требования, затем этот файл.
 
-**Детальные решения и альтернативы** зафиксированы в ADR: [.NET / ASP.NET Core](../architecture/adr/0001-dotnet-aspnet-core-backend.md), [React и TypeScript](../architecture/adr/0002-react-typescript-frontend.md), [PostgreSQL](../architecture/adr/0003-use-postgres.md), [ClickHouse](../architecture/adr/0004-clickhouse-telemetry.md), [RabbitMQ с MQTT](../architecture/adr/0005-rabbitmq-mqtt-broker.md), [MinIO](../architecture/adr/0006-minio-s3-object-storage.md), [HashiCorp Vault](../architecture/adr/0007-hashicorp-vault-secrets.md).
+**Детальные решения и альтернативы** зафиксированы в ADR: [.NET / ASP.NET Core](../architecture/adr/0001-dotnet-aspnet-core-backend.md), [React и TypeScript](../architecture/adr/0002-react-typescript-frontend.md), [PostgreSQL](../architecture/adr/0003-use-postgres.md), [ClickHouse](../architecture/adr/0004-clickhouse-telemetry.md), [RabbitMQ с MQTT](../architecture/adr/0005-rabbitmq-mqtt-broker.md), [MinIO](../architecture/adr/0006-minio-s3-object-storage.md), [HashiCorp Vault](../architecture/adr/0007-hashicorp-vault-secrets.md), [Redis и Sentinel](../architecture/adr/0008-redis-sentinel-cache-sessions.md).
 
 ## Пояснение по выбору технологий (сводка)
 
@@ -12,7 +12,7 @@
 - **React и TypeScript** — типизированный SPA для мониторинга и интеграции с GraphQL/WebSocket; React 18.2.0 зафиксирован в метаданных Web ([ADR-0002](../architecture/adr/0002-react-typescript-frontend.md)).
 - **PostgreSQL** — транзакционные справочники и метаданные; отдельно от потоковой телеметрии ([ADR-0003](../architecture/adr/0003-use-postgres.md)).
 - **ClickHouse** — большие объёмы временных рядов, аналитика и поиск событий (NFR-02); запись из SavingService, чтение из Web API ([ADR-0004](../architecture/adr/0004-clickhouse-telemetry.md)).
-- **Redis** — кэш последних показаний и сессии без перегрузки СУБД; отдельный ADR не оформлен, роль задана в LikeC4 и [calc_architecture.md](../architecture/calc_architecture.md).
+- **Redis** — кэш последних показаний и сессии без перегрузки СУБД; HA — реплика и **Redis Sentinel** ([ADR-0008](../architecture/adr/0008-redis-sentinel-cache-sessions.md)).
 - **RabbitMQ с MQTT-плагином** — MQTT с контроллеров и AMQP для сервисов в одном контуре ([ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md)).
 - **MinIO (S3 API)** — объектное хранилище для крупного архива видео; контракт S3 для go2rtc ([ADR-0006](../architecture/adr/0006-minio-s3-object-storage.md)).
 - **HashiCorp Vault** — централизованные секреты приложений по Vault API ([ADR-0007](../architecture/adr/0007-hashicorp-vault-secrets.md)).
@@ -41,6 +41,7 @@
 | TLS/MQTT | Контроллеры теплицы → брокер | Протокол IoT по требованиям и [calc_architecture.md](../architecture/calc_architecture.md); вход в единый брокер. [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |
 | AMQP (5672/TCP via TLS) | `CNT_GM_SavingService` → брокер | Внутренние потребители на AMQP без второго брокера рядом с MQTT. [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |
 | HTTPS, Vault API | Сервисы → секреты | Централизованная выдача секретов и аудит вместо разрозненных конфигов. [ADR-0007](../architecture/adr/0007-hashicorp-vault-secrets.md) |
+| 6379/TCP/RESP via TLS | `CNT_GM_WebAPI`, `CNT_GM_SavingService` ↔ `CNT_GM_Redis_DB` | Кэш онлайн-показаний и сессии stateless API; отказоустойчивость — primary/replica и Sentinel ([ADR-0008](../architecture/adr/0008-redis-sentinel-cache-sessions.md)). |
 
 ## Обмен сообщениями
 
@@ -54,7 +55,7 @@
 | --- | --- | --- |
 | PostgreSQL | Метаданные и справочники (`CNT_GM_DB`); Identity (`CNT_GM_Identity_DB`) | ACID, связи, долговременные справочники; отдельно от телеметрии; одна семья СУБД с Identity. [ADR-0003](../architecture/adr/0003-use-postgres.md) |
 | ClickHouse | Телеметрия и аналитика датчиков (`CNT_GM_Timeseries_DB`); порты: 8123 (запись), 8443 (API из Web API по модели) | Колоночное хранение временных рядов и запросы для поиска событий (NFR-02); объёмы в [calc_architecture.md](../architecture/calc_architecture.md). [ADR-0004](../architecture/adr/0004-clickhouse-telemetry.md) |
-| Redis | Кэш последних показаний, сессии (`CNT_GM_Redis_DB`) | Низкая задержка для онлайн-показаний и сессий stateless Web API без лишней нагрузки на PostgreSQL/ClickHouse; роль задана в LikeC4 (отдельный ADR не оформлен). |
+| Redis + Redis Sentinel | Кэш последних показаний, сессии (`CNT_GM_Redis_DB`) | Низкая задержка для онлайн-показаний и сессий stateless Web API; реплика и Sentinel для failover ([ADR-0008](../architecture/adr/0008-redis-sentinel-cache-sessions.md)). |
 
 ## Видео
 

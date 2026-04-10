@@ -4,6 +4,7 @@
 
 `CNT_GM_DB` хранит **справочники и метаданные** системы greenhouse-monitoring (PostgreSQL), в соответствии с [ADR-0003](../../../adr/0003-use-postgres.md):
 
+- **организации** и **связь пользователь ↔ организация** (доступ к теплицам через членство);
 - теплицы и их иерархия расположения;
 - типы и экземпляры датчиков;
 - камеры и привязка к теплицам;
@@ -13,7 +14,7 @@
 Что **не хранится** в этой БД:
 
 - телеметрия временных рядов датчиков (она в `CNT_GM_Timeseries_DB` / ClickHouse);
-- данные аутентификации/авторизации (они в `CNT_GM_Identity_DB`).
+- учётные записи, пароли и токены OIDC (они в `CNT_GM_Identity_DB`); в метаданных хранится только **`user_id`**, совпадающий с **`sub`** / PK пользователя в Identity (логическая ссылка без FK между базами).
 
 ---
 
@@ -31,6 +32,9 @@
 
 ```mermaid
 erDiagram
+    organizations ||--o{ organizations : "parent"
+    organizations ||--o{ user_organization_memberships : "has members"
+    organizations ||--o{ greenhouses : "tenant"
     regions ||--o{ locations : "contains"
     locations ||--o{ greenhouses : "contains"
     greenhouses ||--o{ greenhouse_sensors : "has"
@@ -41,7 +45,49 @@ erDiagram
 
 ---
 
-## 1) Локации и теплицы
+## 1) Организации и членство пользователей
+
+### `organizations`
+
+Справочник организаций (юридические/операционные единицы). Иерархия опциональна (`parent_id`).
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | `uuid` | PK организации. |
+| `code` | `varchar(64)` | Уникальный короткий код (интеграции, UI). |
+| `name` | `varchar(512)` | Наименование. |
+| `parent_id` | `uuid` | FK → `organizations.id`; `NULL` — корень. |
+| `description` | `text` | Описание. |
+| `is_active` | `boolean` | Активность записи. |
+| `created_at` | `timestamptz` | Создание. |
+| `updated_at` | `timestamptz` | Обновление. |
+
+Индексы: `idx_organizations_code` (unique), `idx_organizations_parent_id`.
+
+### `user_organization_memberships`
+
+Связь учётной записи Identity с организацией. **`user_id`** — тот же идентификатор, что **`sub`** в access token (и PK в `asp_net_users`), тип **`uuid`** при `IdentityUser<Guid>`.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | `uuid` | Суррогатный PK. |
+| `user_id` | `uuid` | Идентификатор пользователя в Identity (**без FK** между БД). |
+| `organization_id` | `uuid` | FK → `organizations.id`. |
+| `is_primary` | `boolean` | Основная организация в UI (не более одной активной на пользователя — контроль в приложении или частичный уникальный индекс). |
+| `title` | `varchar(256)` | Должность в организации. |
+| `membership_role` | `varchar(64)` | Роль в организации (`org_admin`, `member`, …). |
+| `status` | `varchar(32)` | `active`, `invited`, `suspended`, … |
+| `joined_at` | `timestamptz` | Начало членства. |
+| `left_at` | `timestamptz` | Окончание; `NULL` — действующее. |
+| `created_at` | `timestamptz` | Создание записи. |
+| `updated_at` | `timestamptz` | Обновление записи. |
+
+Ограничения: частичный уникальный индекс на `(user_id, organization_id)` при `left_at IS NULL`.  
+Индексы: `idx_user_organization_memberships_user_id`, `idx_user_organization_memberships_organization_id`.
+
+---
+
+## 2) Локации и теплицы
 
 ### `regions`
 
@@ -78,6 +124,7 @@ erDiagram
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `id` | `uuid` | PK теплицы. |
+| `organization_id` | `uuid` | FK -> `organizations.id`. Владелец/арендатор теплицы; фильтр «свои теплицы» через `user_organization_memberships`. |
 | `location_id` | `uuid` | FK -> `locations.id`. |
 | `code` | `varchar(32)` | Уникальный код теплицы. |
 | `name` | `varchar(256)` | Отображаемое имя. |
@@ -88,11 +135,11 @@ erDiagram
 | `created_at` | `timestamptz` | Дата создания. |
 | `updated_at` | `timestamptz` | Дата обновления. |
 
-Индексы: `idx_greenhouses_location_id`, `idx_greenhouses_code` (unique).
+Индексы: `idx_greenhouses_organization_id`, `idx_greenhouses_location_id`, уникальность кода теплицы в рамках организации: `idx_greenhouses_org_code` (unique on `organization_id`, `code`).
 
 ---
 
-## 2) Датчики и типы датчиков
+## 3) Датчики и типы датчиков
 
 ### `sensor_types`
 
@@ -132,7 +179,7 @@ erDiagram
 
 ---
 
-## 3) Камеры
+## 4) Камеры
 
 ### `greenhouse_cameras`
 
@@ -151,7 +198,7 @@ erDiagram
 
 ---
 
-## 4) Правила порогов для событий
+## 5) Правила порогов для событий
 
 ### `sensor_threshold_rules`
 
@@ -187,12 +234,16 @@ erDiagram
 ### Связь с `CNT_GM_Identity_DB`
 
 - Прямые FK между базами **не используются**.
-- Контроль доступа к объектам метаданных выполняется на уровне API/claims.
+- `user_organization_memberships.user_id` сопоставляется с идентификатором пользователя в Identity (`sub` / PK `asp_net_users`).
+- Контроль доступа: `CNT_GM_WebAPI` по JWT определяет `user_id`, проверяет членство в `organization_id` и отдаёт только теплицы с совпадающим `greenhouses.organization_id`.
 
 ---
 
 ## Минимальные ограничения целостности
 
+- `organizations.parent_id` -> `organizations.id` (`ON DELETE RESTRICT`)
+- `user_organization_memberships.organization_id` -> `organizations.id` (`ON DELETE RESTRICT`)
+- `greenhouses.organization_id` -> `organizations.id` (`ON DELETE RESTRICT`)
 - `greenhouses.location_id` -> `locations.id` (`ON DELETE RESTRICT`)
 - `locations.region_id` -> `regions.id` (`ON DELETE RESTRICT`)
 - `greenhouse_sensors.greenhouse_id` -> `greenhouses.id` (`ON DELETE RESTRICT`)
@@ -206,4 +257,5 @@ erDiagram
 
 - Контейнер БД: [cnt_gm_db/model.c4](../../containers/cnt_gm_db/model.c4)
 - ADR по PostgreSQL: [ADR-0003](../../../adr/0003-use-postgres.md)
+- Структура БД Identity (без организаций): [identity_database_structure.md](../cnt_gm_identity_db/identity_database_structure.md)
 - Структура БД телеметрии: [timeseries_database_structure.md](../cnt_gm_timeseries_db/timeseries_database_structure.md)

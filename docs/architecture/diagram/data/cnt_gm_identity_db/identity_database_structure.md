@@ -2,7 +2,7 @@
 
 ## Назначение и границы
 
-База данных **CNT_GM_Identity_DB** хранит данные подсистемы **Identity** ([модель контейнера](../../containers/cnt_gm_identity_db/model.c4)): учётные записи, аутентификацию и авторизацию (в т.ч. OAuth/OIDC через **OpenIddict**), **глобальные роли** пользователей, **справочник организаций** и **связи пользователь ↔ организация**. Прикладные справочники домена мониторинга теплиц (теплицы, регионы и т.д.) остаются в **CNT_GM_DB** ([ADR-0003](../../../adr/0003-use-postgres.md)); эта БД не дублирует их без явной необходимости.
+База данных **CNT_GM_Identity_DB** хранит данные подсистемы **Identity** ([модель контейнера](../../containers/cnt_gm_identity_db/model.c4)): учётные записи, аутентификацию и авторизацию (в т.ч. OAuth/OIDC через **OpenIddict**) и **глобальные роли** пользователей. **Организации** и **членство пользователя в организации** описаны в БД метаданных **`CNT_GM_DB`** ([metadata_database_structure.md](../cnt_gm_db/metadata_database_structure.md)); прикладные справочники домена (теплицы, регионы, датчики и т.д.) также в **`CNT_GM_DB`** ([ADR-0003](../../../adr/0003-use-postgres.md)).
 
 **СУБД:** PostgreSQL (как в архитектуре развёртывания и ADR).
 
@@ -40,8 +40,6 @@
 | Сущность области (`OpenIddictScopes`) | `openiddict_scopes` |
 | Сущность авторизации (`OpenIddictAuthorizations`) | `openiddict_authorizations` |
 | Сущность токена (`OpenIddictTokens`) | `openiddict_tokens` |
-| Прикладная сущность `Organization` | `organizations` |
-| Прикладная сущность `UserOrganizationMembership` | `user_organization_memberships` |
 
 Точные имена типов сущностей OpenIddict зависят от версии пакета `OpenIddict.EntityFrameworkCore`; **имена таблиц по умолчанию** в конфигурации модели — `OpenIddictApplications`, `OpenIddictAuthorizations`, `OpenIddictScopes`, `OpenIddictTokens` ([документация OpenIddict + EF Core](https://documentation.openiddict.com/integrations/entity-framework-core)).
 
@@ -66,7 +64,7 @@
 
 ## Соглашения по именованию
 
-Индексы и ограничения FK — по [psql-naming-conventions.md](../../../../standards/psql-naming-conventions.md): `idx_*`, `fk_*`. В описаниях ниже для краткости указаны логические имена; в миграциях их привяжите к фактическим таблицам `asp_net_*`, `openiddict_*`, `organizations`, `user_organization_memberships`.
+Индексы и ограничения FK — по [psql-naming-conventions.md](../../../../standards/psql-naming-conventions.md): `idx_*`, `fk_*`. В описаниях ниже для краткости указаны логические имена; в миграциях их привяжите к фактическим таблицам `asp_net_*`, `openiddict_*`.
 
 Рекомендуемая **схема PostgreSQL:** `identity`.
 
@@ -85,9 +83,6 @@ erDiagram
     asp_net_users ||--o{ asp_net_user_logins : ""
     asp_net_users ||--o{ asp_net_user_tokens : ""
     asp_net_users ||--o{ asp_net_user_passkeys : ""
-    asp_net_users ||--o{ user_organization_memberships : "участник"
-    organizations ||--o{ user_organization_memberships : "включает"
-    organizations ||--o{ organizations : "parent"
     openiddict_applications ||--o{ openiddict_authorizations : ""
     openiddict_authorizations ||--o{ openiddict_tokens : ""
     asp_net_users ||--o{ openiddict_authorizations : "subject"
@@ -117,7 +112,7 @@ erDiagram
 | `created_at` | `timestamptz` | Прикладное поле | Не в базовом `IdentityUser`; добавляется в `ApplicationUser`. |
 | `updated_at` | `timestamptz` | Прикладное поле | То же. |
 
-**Связи:** `asp_net_user_roles`, `asp_net_user_claims`, `asp_net_user_logins`, `asp_net_user_tokens`, `asp_net_user_passkeys` (schema v3), `user_organization_memberships`; при связи с OpenIddict — по `subject` в `openiddict_authorizations` / `openiddict_tokens` (строка, не всегда FK).
+**Связи:** `asp_net_user_roles`, `asp_net_user_claims`, `asp_net_user_logins`, `asp_net_user_tokens`, `asp_net_user_passkeys` (schema v3); при связи с OpenIddict — по `subject` в `openiddict_authorizations` / `openiddict_tokens` (строка, не всегда FK). Связь пользователя с организациями в **`CNT_GM_DB`**: колонка `user_organization_memberships.user_id` совпадает с `asp_net_users.id` / claim `sub` (без FK между базами).
 
 ---
 
@@ -274,61 +269,17 @@ PK: `credential_id`. Индексы по FK на пользователя соз
 
 ---
 
-## 4. Справочник организаций
-
-### `organizations`
-
-Прикладная сущность **`Organization`**, не входящая в шаблон Identity/OpenIddict; имена колонок задаются в вашем `IEntityTypeConfiguration` / соглашениях.
-
-| Колонка | Тип | Описание |
-|---------|-----|----------|
-| `id` | `uuid` | PK. |
-| `code` | `character varying(64)` | Уникальный код. |
-| `name` | `character varying(512)` | Наименование. |
-| `parent_id` | `uuid` | FK → `organizations(id)` ON DELETE RESTRICT. |
-| `description` | `text` | Описание. |
-| `is_active` | `boolean` | Активность записи. |
-| `created_at` | `timestamptz` | Создание. |
-| `updated_at` | `timestamptz` | Обновление. |
-
-**Индексы:** `idx_organizations_code`, `idx_organizations_parent_id`.
-
----
-
-## 5. Связь пользователь — организация
-
-### `user_organization_memberships`
-
-| Колонка | Тип | Описание |
-|---------|-----|----------|
-| `id` | `uuid` | PK. |
-| `user_id` | `uuid` или `text` | FK → `asp_net_users(id)` ON DELETE CASCADE (тип как у PK пользователя). |
-| `organization_id` | `uuid` | FK → `organizations(id)` ON DELETE RESTRICT. |
-| `is_primary` | `boolean` | Основная организация. |
-| `title` | `character varying(256)` | Должность в организации. |
-| `membership_role` | `character varying(64)` | Опционально: роль в организации. |
-| `status` | `character varying(32)` | `active`, `invited`, `suspended`, … |
-| `joined_at` | `timestamptz` | Начало членства. |
-| `left_at` | `timestamptz` | Окончание; `NULL` — действующее. |
-
-**Ограничения:** частичный уникальный индекс по `(user_id, organization_id)` при `left_at IS NULL`.
-
-**Индексы:** `idx_user_organization_memberships_user_id`, `idx_user_organization_memberships_organization_id`.
-
----
-
-## 6. Роли: глобальные и в контексте организации
+## 4. Роли (глобальные)
 
 | Механизм | Таблицы EF / PostgreSQL | Назначение |
 |----------|-------------------------|------------|
 | Глобальные роли | `AspNetRoles` / `AspNetUserRoles` → `asp_net_roles`, `asp_net_user_roles` | Системные роли (сотрудник, инженер и т.д.). |
-| Участие в организации | `user_organization_memberships` | Привязка к организациям, должность, `membership_role`. |
 
-Расширение до отдельных таблиц `organization_roles` / назначений ролей в организации — по мере необходимости; имена задавайте во Fluent API и фиксируйте в следующей миграции.
+Роли и права **внутри организации** (`membership_role`, списки организаций пользователя) — в **`CNT_GM_DB`**, см. [metadata_database_structure.md](../cnt_gm_db/metadata_database_structure.md).
 
 ---
 
-## 7. Безопасность и эксплуатация
+## 5. Безопасность и эксплуатация
 
 - Секреты клиентов OIDC и ключи подписи JWT при промышленной конфигурации частично размещаются в **Vault**; в БД не хранить открытые долгоживущие секреты без необходимости.
 - Резервное копирование и репликация — в общем контуре PostgreSQL (см. [production-deployment.c4](../../infrastructure/production-deployment.c4)).
@@ -340,5 +291,6 @@ PK: `credential_id`. Индексы по FK на пользователя соз
 
 - Контейнер БД: [model.c4](../../containers/cnt_gm_identity_db/model.c4)
 - ADR по PostgreSQL: [ADR-0003](../../../adr/0003-use-postgres.md)
+- БД метаданных (организации, теплицы): [metadata_database_structure.md](../cnt_gm_db/metadata_database_structure.md)
 - Соглашения SQL: [psql-naming-conventions.md](../../../../standards/psql-naming-conventions.md)
 - Контекст узлов: [project-context.md](../../../../ai/project-context.md)

@@ -8,7 +8,7 @@
 | **Дата** | 2026-04-05 |
 | **Автор** | Команда проекта |
 | **Рецензенты** | — |
-| **Версия** | 1.0 |
+| **Версия** | 1.1 |
 
 ## Связанные артефакты
 
@@ -16,7 +16,7 @@
 |-----|--------|
 | **Требования** | [NFR-01](../../requirements/non-functional/01-latency-live-stream.md), [NFR-02](../../requirements/non-functional/02-response-time-event-search.md), [NFR-04](../../requirements/non-functional/04-scalability.md), [FR-02](../../requirements/functional/02-event-search-and-archive.md) |
 | **Связанные ADR** | [ADR-0003: PostgreSQL для справочников](0001-use-postgres.md) — метаданные и справочники не смешиваются с потоком телеметрии; [ADR-0001: .NET](0001-dotnet-aspnet-core-backend.md) — клиенты доступа из сервисов .NET |
-| **Диаграммы** | [CNT_GM_Timeseries_DB](../diagram/containers/cnt_gm_timeseries_db/model.c4), связи [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/model.c4) |
+| **Диаграммы** | [CNT_GM_Timeseries_DB](../diagram/containers/cnt_gm_timeseries_db/model.c4), связи [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/model.c4); развёртывание: [production-deployment.c4](../diagram/infrastructure/production-deployment.c4) (ноды данных + **ClickHouse Keeper**) |
 | **Документация** | [Расчёт архитектуры](../calc_architecture.md) (колоночная БД / TSDB, объёмы, NFR-02), [tech-stack.md](../../ai/tech-stack.md) |
 
 ---
@@ -121,6 +121,16 @@ risks: ["Расхождение с LikeC4 и tech-stack"]
 
 Справочная информация о теплицах, датчиках и пользователях по-прежнему в **PostgreSQL** (`CNT_GM_DB`); связь запросов — через идентификаторы и контракты API, без дублирования сырых временных рядов в реляционной БД.
 
+### Координация кластера: ClickHouse Keeper
+
+Для **отказоустойчивости и репликации** (согласованно с [NFR-03](../../requirements/non-functional/03-availability.md) и целевой топологией в [production-deployment.c4](../diagram/infrastructure/production-deployment.c4)) принять **ClickHouse Keeper** как сервис координации кластера:
+
+- **Назначение:** хранение метаданных репликации, координация распределённых операций и согласованное состояние реплик; в экосистеме ClickHouse Keeper — рекомендуемая замена **Apache ZooKeeper** для новых развёртываний (совместимый протокол, меньший операционный контур, единая линейка релизов с сервером ClickHouse).
+- **Топология в проекте:** **две ноды ClickHouse** (данные) + **ансамбль Keeper из нечётного числа узлов** (на диаграмме развёртывания — **три** процесса `clickhouse-keeper` для **кворума** при выборах лидера и устойчивости к отказу одного узла). Число нод Keeper не смешивается с числом серверов данных: Keeper не хранит пользовательские таблицы телеметрии.
+- **Эксплуатация:** отдельная конфигурация и мониторинг процессов Keeper (порты, диск под лог/WAL, резервное копирование состояния координации по политике среды); схемы таблиц (`ReplicatedMergeTree` и т.п.) и политика шардирования/репликации задаются в техническом проекте и должны ссылаться на тот же ансамбль Keeper.
+
+Для **одноузловой** среды (например, локальная разработка) допускается упрощённый вариант без полноценного кворума Keeper; для **production** зафиксирована связка **2 × ClickHouse server + 3 × ClickHouse Keeper**, как на диаграмме инфраструктуры.
+
 ---
 
 ## Последствия
@@ -133,9 +143,19 @@ risks: ["Расхождение с LikeC4 и tech-stack"]
 ### Отрицательные
 
 - Два класса СУБД в эксплуатации: **PostgreSQL** и **ClickHouse** (компенсируется разделением ролей).
-- Необходимость отдельных резервных копий, мониторинга и runbook для кластера ClickHouse.
+- Необходимость отдельных резервных копий, мониторинга и runbook для кластера ClickHouse **и** для ансамбля **ClickHouse Keeper** (дополнительные узлы, кворум, обновления в согласованном порядке).
 
 ### Последующие действия
 
 - Держать [tech-stack.md](../../ai/tech-stack.md) и описание портов/протоколов согласованными с LikeC4.
-- При смене движка для телеметрии оформить новый ADR и обновить модель `cnt_gm_timeseries_db`.
+- Зафиксировать в техническом проекте параметры Keeper (endpoints для `keeper_server`, версии, диски) и проверки готовности перед раскаткой схем с репликацией.
+- При смене движка для телеметрии или координации (в т.ч. отказ от Keeper в пользу иной схемы) оформить новый ADR и обновить модель `cnt_gm_timeseries_db` и диаграмму [production-deployment.c4](../diagram/infrastructure/production-deployment.c4).
+
+---
+
+## История изменений
+
+| Версия | Дата | Изменения |
+|--------|------|-----------|
+| 1.1 | 2026-04-07 | Зафиксировано использование **ClickHouse Keeper** для координации кластера; ссылка на диаграмму развёртывания; последствия и действия для эксплуатации Keeper. |
+| 1.0 | 2026-04-05 | Первоначальное решение: ClickHouse для телеметрии. |
