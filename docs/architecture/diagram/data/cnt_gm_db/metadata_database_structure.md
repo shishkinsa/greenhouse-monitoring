@@ -23,7 +23,7 @@
 - СУБД: PostgreSQL.
 - Именование: `snake_case`, таблицы во множественном числе (см. [psql-naming-conventions](../../../../standards/psql-naming-conventions.md)).
 - Рекомендуемая схема: `app`.
-- PK: `uuid`.
+- PK: **`uuid`** для всех сущностей домена (организации, теплицы, датчики, камеры, правила и т.д.); публичный REST описан в [gm_openapi.yaml](../../openapi/components/gm_openapi.yaml) с тем же типом идентификаторов в путях и JSON.
 - Время: `timestamptz`.
 
 ---

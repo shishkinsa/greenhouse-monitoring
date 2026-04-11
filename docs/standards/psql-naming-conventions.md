@@ -2,6 +2,8 @@
 
 Правила именования для PostgreSQL задаются данным документом. Общие стандарты проекта (C#) — [src/.editorconfig](src/.editorconfig). В .editorconfig нет секции для SQL; проверка соответствия — по ревью и при необходимости линтерами/скриптами миграций.
 
+**Проект greenhouse-monitoring:** в `CNT_GM_DB` и в публичном API ([gm_openapi.yaml](../architecture/openapi/components/gm_openapi.yaml)) первичные и внешние ключи доменных сущностей — тип **`uuid`**. Примеры ниже с `BIGSERIAL`/`SERIAL` сохранены как **универсальные** шаблоны SQL; для таблиц этого продукта применяйте `uuid PRIMARY KEY DEFAULT gen_random_uuid()` (или эквивалент), если иное не зафиксировано в [metadata_database_structure.md](../architecture/diagram/data/cnt_gm_db/metadata_database_structure.md).
+
 | Сущность | Стиль | Пример |
 |----------|--------|--------|
 | База данных | snake_case | company_production |

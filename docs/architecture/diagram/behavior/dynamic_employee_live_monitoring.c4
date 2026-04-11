@@ -1,6 +1,7 @@
 // Связанные требования: employee_live_monitoring — US-01, FR-01; engineer_event_search — US-02, FR-02
 // Тип: LikeC4 dynamic view (behavior)
 // Аутентификация: OIDC Authorization Code + PKCE; детальный поток — docs/architecture/diagram/security/oidc-user-authentication.c4
+// Идентификаторы в REST/OpenAPI и метаданных — UUID (docs/architecture/openapi/components/gm_openapi.yaml, CNT_GM_DB).
 
 views {
     dynamic view employee_live_monitoring {
@@ -22,26 +23,34 @@ views {
 
         greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_identity_webapi 'access_token / id_token в SPA; готовность к вызовам API'
 
-        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Запросы метаданных теплиц/камер и актуальных показаний датчиков' {
-            notes '**FR-01**: температура, влажность, кислотность в реальном времени'
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Метаданные теплиц и камер, онлайн-показания датчиков\nGET /api/v1/organisations/{id}/greenhouses; GET /api/v1/greenhouses/{id}/video-cameras; GET /api/v1/greenhouses/{id}/sensor-snapshot; GET /api/v1/greenhouses/{id}/sensor-online-values' {
+            notes '''
+            **FR-01**: выбор теплицы и камеры, три показания датчиков (температура, влажность, кислотность) в реальном времени.
+            Подробный контракт — `docs/architecture/openapi/components/gm_openapi.yaml`. Параметры `{id}` — UUID организации или теплицы; для `sensor-online-values` после Upgrade ожидается поток сообщений JSON (схема `GreenhouseSensorLivePayload` в спецификации).
+            '''
         }
 
         greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_identity_webapi 'Проверка access token (JWKS)'
 
         parallel {
-            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_db 'Справочники и метаданные (CRUD)' {
-                notes 'Списки теплиц, камер и пр. при необходимости для UI'
+            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_db 'Справочники для списков теплиц и камер\nGET /api/v1/organisations/{id}/greenhouses; GET /api/v1/greenhouses/{id}/video-cameras' {
+                notes 'Чтение PostgreSQL (`CNT_GM_DB`): организации, теплицы, камеры; пагинация `page`, `page_size` — по спецификации OpenAPI.'
             }
 
-            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_redis_db 'Онлайн-показания датчиков (кэш)' {
-                notes 'По архитектуре WebAPI читает последние значения из Redis'
+            greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_redis_db 'Кэш последних показаний датчиков\nGET /api/v1/greenhouses/{id}/sensor-snapshot; GET /api/v1/greenhouses/{id}/sensor-online-values' {
+                notes 'Данные пишет SavingService; синхронный снимок для REST и те же значения для потока после WebSocket Upgrade; задержка live — NFR-01 / BR-R05.'
             }
         }
 
-        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Ответы API (JSON)'
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Ответы Web API в SPA\n200 JSON по GET …/greenhouses, …/video-cameras, …/sensor-snapshot' {
+            notes 'Тела ответов — `PagedGreenhouses`, `PagedVideoCameras`, `GreenhouseSensorSnapshot` в OpenAPI; ошибки 4xx/5xx — `ProblemDetails`.'
+        }
 
-        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_only 'Live-видеопоток (WebSocket, MSE)' {
-            notes '**FR-01**: go2rtc, задержка в рамках NFR; без архивного сценария'
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_only 'Live-видео с камеры (go2rtc)\nGET /api/v1/video-cameras/{id}/video' {
+            notes '''
+            **FR-01**: WebSocket / MSE в браузере; без архивного сценария.
+            HTTP возвращает `101 Switching Protocols`, далее медиа-сигналинг; `{id}` — UUID `greenhouse_cameras.id`. Задержка — NFR-01; детали медиаслоя — контейнер **CNT_GM_WebRTCServer_Only**.
+            '''
         }
     }
 
@@ -61,22 +70,34 @@ views {
 
         greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_identity_webapi 'Токены в SPA'
 
-        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Поиск событий: выражение по датчикам, теплицы, интервал' {
-            notes '**FR-02**, отклик ≤ 10 с (NFR-02). По модели контейнера к WebAPI допускаются **HTTPS** и **WebSocket** (GraphQL); для типичного запроса поиска достаточно синхронного HTTPS; WS — если используете GraphQL over WebSocket / подписки.'
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webapi 'Поиск событий, карточка события, ряды для графиков, GraphQL-аналитика\nPOST /api/v1/events/search; GET /api/v1/events/{eventId}; GET /api/v1/events/{eventId}/sensor-timeseries; POST /api/v1/sensor-analytics' {
+            notes '''
+            **FR-02**: критерий по датчикам, одна или несколько теплиц, интервал; отклик списка событий — ≤ 10 с (NFR-02 / BR-R06).
+            `sensor-analytics` — GraphQL поверх JSON; при необходимости подписок допускается отдельный WebSocket (вне фрагмента OpenAPI). Контракт полей — `docs/architecture/openapi/components/gm_openapi.yaml`.
+            '''
         }
 
         greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_identity_webapi 'Проверка access token (JWKS)'
 
-        greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_timeseries_db 'Запрос событий и архивной телеметрии (GraphQL)' {
-            notes '**FR-02**: ClickHouse по контейнерной модели'
+        greenhouse_system.cnt_gm_webapi -> greenhouse_system.cnt_gm_timeseries_db 'Запросы телеметрии и аналитики в ClickHouse\nPOST /api/v1/events/search; GET /api/v1/events/{eventId}/sensor-timeseries; POST /api/v1/sensor-analytics' {
+            notes '''
+            **FR-02**: выборки по временным рядам и агрегаты для поиска событий, графиков и произвольного GraphQL; транспорт и порты — по модели контейнера `CNT_GM_Timeseries_DB` (не публичный REST клиента).
+            '''
         }
 
-        greenhouse_system.cnt_gm_webapi <- greenhouse_system.cnt_gm_timeseries_db 'Список событий и данные для графиков'
+        greenhouse_system.cnt_gm_webapi <- greenhouse_system.cnt_gm_timeseries_db 'Результаты ClickHouse в Web API\n(события, ряды, GraphQL)' {
+            notes 'Сериализация в DTO из OpenAPI: `EventSearchResponse`, `SensorTimeseriesResponse`, `GraphQLResponse` и т.д.'
+        }
 
-        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Результаты поиска в SPA'
+        greenhouse_system.cnt_gm_web <- greenhouse_system.cnt_gm_webapi 'Ответы Web API в SPA\n200 JSON: POST …/events/search; GET …/events/{eventId}; GET …/sensor-timeseries' {
+            notes 'Пустой список событий — валидный ответ; усечение выдачи — поле `truncated` в `EventSearchResponse` (см. OpenAPI).'
+        }
 
-        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_history 'Архивное видео (WebSocket, MSE), go2rtc history' {
-            notes 'Как в модели **cnt_gm_web** → history: **WebSocket, MSE**. Отличается от live: контейнер **WebRTCServer_History**.'
+        greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_history 'Архивное видео (интервал или событие)\nGET /api/v1/video-cameras/{id}/video/archive; GET /api/v1/events/{eventId}/video-cameras/{cameraId}/video/archive' {
+            notes '''
+            **FR-02**: архивное видео через go2rtc history (**WebSocket, MSE**); контейнер **CNT_GM_WebRTCServer_History** (отличие от live).
+            Первый путь — произвольный интервал (`time_begin`, `time_end` обязательны в query). Второй — окно события (опционально сузить подинтервал теми же query-параметрами). Оба — ответ `101` → WS.
+            '''
         }
 
         greenhouse_system.cnt_gm_webrtcserver_history -> greenhouse_system.cnt_gm_s3 'Чтение сегментов архива (S3 API)' {

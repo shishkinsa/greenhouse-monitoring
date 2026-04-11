@@ -11,7 +11,7 @@
 | **Требования** | [requirements/](requirements/) | Бизнес, функциональные, нефункциональные требования |
 | **Стандарты** | [standards/](standards/) | Правила и соглашения |
 | **Архитектура** | [architecture/](architecture/) | ADR и диаграммы |
-| **API** | [openapi/](openapi/) | OpenAPI спецификации |
+| **API** | [openapi/](openapi/) | OpenAPI спецификации; идентификаторы сущностей в контракте — **UUID** ([gm_openapi.yaml](architecture/openapi/components/gm_openapi.yaml)) |
 | **Артефакты** | [public/](public/) | Сгенерированные PNG |
 
 ## Стандарты (standards/)

@@ -60,6 +60,8 @@
 
 **OpenIddict:** поля и длины строк — по конфигурациям `OpenIddictEntityFrameworkCore*Configuration` в [openiddict/openiddict-core](https://github.com/openiddict/openiddict-core) (типовой ключ `TKey` в шаблонах — **строка**; при замене на `Guid` типы PK/FK в PostgreSQL станут `uuid`).
 
+**Унификация с доменной моделью (greenhouse-monitoring):** все **субъектные** идентификаторы, которые пересекаются с `CNT_GM_DB`, публичным REST/OpenAPI и ClickHouse (`greenhouse_id`, `sensor_id`, …), — **`uuid`**. В типовом шаблоне ASP.NET Core Identity поле **`id`** строк таблиц **`asp_net_user_claims`** и **`asp_net_role_claims`** — **`integer`**; в этом проекте зафиксировано **`uuid`** для этих PK, чтобы все первичные ключи строк в PostgreSQL (кроме служебных счётчиков вроде `access_failed_count`) были единообразны. Реализация: кастомные сущности claim с `Guid` PK и маппинг в EF Core вместо встроенных `IdentityUserClaim` / `IdentityRoleClaim` с `int Id`, либо эквивалентная миграция.
+
 ---
 
 ## Соглашения по именованию
@@ -140,7 +142,7 @@ PK: `(user_id, role_id)`.
 
 | Колонка | Тип | Ограничение в EF | Описание |
 |---------|-----|------------------|----------|
-| `id` | `integer` | PK, автоинкремент | Суррогатный ключ записи claim. |
+| `id` | `uuid` | PK | Суррогатный ключ строки claim (в проекте — `uuid`; не путать с `user_id`). |
 | `user_id` | `uuid` или `text` | FK, обязательный | Владелец claim. |
 | `claim_type` | `text` | — | URI типа claim. |
 | `claim_value` | `text` | — | Значение claim. |
@@ -149,7 +151,7 @@ PK: `(user_id, role_id)`.
 
 | Колонка | Тип | Ограничение в EF | Описание |
 |---------|-----|------------------|----------|
-| `id` | `integer` | PK, автоинкремент | Суррогатный ключ записи claim. |
+| `id` | `uuid` | PK | Суррогатный ключ строки claim (в проекте — `uuid`; не путать с `role_id`). |
 | `role_id` | `uuid` или `text` | FK, обязательный | Роль, к которой относится claim. |
 | `claim_type` | `text` | — | URI типа claim. |
 | `claim_value` | `text` | — | Значение claim. |

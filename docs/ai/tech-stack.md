@@ -35,7 +35,7 @@
 
 | Технология | Назначение | Почему выбрана |
 | --- | --- | --- |
-| HTTPS, WebSocket, GraphQL | Клиент ↔ Web API; Bearer access token | Единая точка API для UI; GraphQL для запросов к телеметрии; WebSocket для живых данных — по моделям связей `CNT_GM_Web` ↔ `CNT_GM_WebAPI`. |
+| HTTPS, WebSocket, GraphQL | Клиент ↔ Web API; Bearer access token | Единая точка API для UI; идентификаторы сущностей в REST — **UUID** ([gm_openapi.yaml](../architecture/openapi/components/gm_openapi.yaml)); GraphQL для запросов к телеметрии; WebSocket для живых данных — по моделям связей `CNT_GM_Web` ↔ `CNT_GM_WebAPI`. |
 | OpenID Connect | Аутентификация Web-приложения с Identity | Стандарт для браузерных SPA и выдачи access token; согласован с OpenIddict на сервере. [ADR-0001](../architecture/adr/0001-dotnet-aspnet-core-backend.md), [ADR-0002](../architecture/adr/0002-react-typescript-frontend.md) |
 | HTTPS, OIDC metadata, JWKS | Web API ↔ Identity Web API | Проверка access token без общей сессии; stateless API. [ADR-0001](../architecture/adr/0001-dotnet-aspnet-core-backend.md) |
 | TLS/MQTT | Контроллеры теплицы → брокер | Протокол IoT по требованиям и [calc_architecture.md](../architecture/calc_architecture.md); вход в единый брокер. [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |

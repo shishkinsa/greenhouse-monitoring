@@ -110,7 +110,7 @@ public class PaymentProcessor
 // ✅ Правильно - открывающая скобка на новой строке
 public class UserService
 {
-    public async Task<User> GetUserByIdAsync(int id)
+    public async Task<User> GetUserByIdAsync(Guid id)
     {
         var user = await _dbContext.Users
             .Where(u => u.Id == id)
@@ -158,7 +158,7 @@ public class UserService
     private const int MaxRetryCount = 3;
     protected ILogger Logger { get; set; }
     
-    public async Task<User> GetUserAsync(int id)
+    public async Task<User> GetUserAsync(Guid id)
     {
         // ...
     }
@@ -168,11 +168,11 @@ public class UserService
 ### Обработка ошибок
 ```csharp
 // ✅ Правильно - специфичные исключения
-public async Task<User> GetUserAsync(int id)
+public async Task<User> GetUserAsync(Guid id)
 {
-    if (id <= 0)
+    if (id == Guid.Empty)
     {
-        throw new ArgumentException("Id must be positive", nameof(id));
+        throw new ArgumentException("Id must be non-empty", nameof(id));
     }
     
     var user = await _userRepository.GetByIdAsync(id);
@@ -186,7 +186,7 @@ public async Task<User> GetUserAsync(int id)
 }
 
 // Асинхронные методы должны принимать CancellationToken
-public async Task<User> GetUserAsync(int id, CancellationToken cancellationToken = default)
+public async Task<User> GetUserAsync(Guid id, CancellationToken cancellationToken = default)
 {
     cancellationToken.ThrowIfCancellationRequested();
     // ...

@@ -1,153 +1,821 @@
 openapi: "3.0.3"
 info:
   title: API Greenhouse Monitoring
-  version: 1.0.1
-  description: "14.01.2026"
+  version: 1.1.0
+  description: |
+    REST и WebSocket-совместимые операции мониторинга теплиц: метаданные (организация → теплицы → камеры), live- и архивное видео,
+    онлайн-телеметрия датчиков, поиск событий и выгрузка рядов для графиков (FR-02), GraphQL для аналитики.
+
+    **Идентификаторы:** в URL и JSON используются UUID, согласованные с метаданными `CNT_GM_DB` (PostgreSQL).
+    Код теплицы `code` на объекте и в MQTT (`greenhouse_code` в интеграции edge) сопоставляется с полем `code` в ресурсе теплицы;
+    см. `docs/architecture/diagram/data/cnt_gm_db/metadata_database_structure.md`, `docs/architecture/integration/edge-devices.md`.
+
+    **Аутентификация:** доступ по bearer-токену; типично **OIDC** access token (JWT) из `CNT_GM_Identity_DB` / веб-клиента (FR-03).
+    Роли: сценарии поиска событий и архива по событиям — **инженер**; отказ при недостаточных правах — `403`.
+
+    **Нефункциональные ориентиры:** задержка live видео и датчиков до **30 с** (NFR-01, BR-R05); ответ поиска событий до **10 с** (NFR-02, BR-R06).
+
+    Эндпоинты с ответом `101 Switching Protocols` предполагают обновление до WebSocket; форма сообщений для датчиков описана схемой `GreenhouseSensorLivePayload`.
+servers:
+  - url: https://api.example.com
+    description: Пример базового URL (замените на фактический хост окружения)
+security:
+  - bearerAuth: []
 tags:
   - name: Common
-    description: Общие операции
+    description: Общие операции (метаданные, списки)
   - name: DigitalController
-    description: Операции по получению данных с цифровых датчиков
+    description: Операции по данным цифровых датчиков и аналитике
   - name: VideoCamera
-    description: Операции по получению видеоконтента
+    description: Операции по видеоконтенту
+  - name: Events
+    description: Поиск событий и архив по сценарию инженера (FR-02)
 paths:
   /api/v1/organisations/{id}/greenhouses:
-    description: Получить список теплиц
+    description: |
+      Список теплиц организации, доступных пользователю по членству (`user_organization_memberships`).
+      При масштабе 1000+ объектов используйте пагинацию (BR-R01, NFR-04).
     get:
-      summary: Список теплиц
+      operationId: listGreenhousesByOrganisation
+      summary: Список теплиц (с пагинацией)
       tags:
         - Common
       parameters:
-        - name: id
-          description: Идентификатор организации пользователя
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/OrganisationId"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
       responses:
         "200":
-          description: GreenhousesDTO
+          description: Страница списка теплиц
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  required:
-                    - id
-                    - name
-                    - organisationId
-                  properties:
-                    id:
-                      description: Идентификатор теплицы
-                      type: integer
-                      example: 1
-                    name:
-                      description: Наименование теплицы
-                      type: string
-                      example: Теплица 1
-                    organisationId:
-                      description: Идентификатор организации
-                      type: integer
-                      example: 1
-                    address:
-                      description: Адрес теплицы
-                      type: string
-                      example: Россия, Московская область, город Рязань
+                $ref: "#/components/schemas/PagedGreenhouses"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/greenhouses/{id}/video-cameras:
-    description: Получить список видеокамер в теплице
+    description: Список камер теплицы (до 5 на объект, BR-R02).
     get:
+      operationId: listVideoCamerasByGreenhouse
       summary: Список видеокамер в теплице
       tags:
         - Common
       parameters:
-        - name: id
-          description: Идентификатор теплцы
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/GreenhouseId"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
       responses:
         "200":
-          description: VideoCamerasDTO
+          description: Страница списка камер
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  required:
-                    - id
-                    - name
-                    - greenhouseId
-                    - ipAddress
-                  properties:
-                    id:
-                      description: Идентификатор камеры
-                      type: integer
-                      example: 1
-                    name:
-                      description: Наименование камеры
-                      type: string
-                      example: Камера 1
-                    greenhouseId:
-                      description: Идентификатор теплицы
-                      type: integer
-                      example: 1
-                    ipAddress:
-                      description: IP адрес теплицы
-                      type: string
-                      example: 10.14.225.101
+                $ref: "#/components/schemas/PagedVideoCameras"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/video-cameras/{id}/video:
-    description: Просмотр видеопотока с камеры
+    description: |
+      Live-видеопоток с камеры (переход на WebSocket / WebRTC-сигналинг после Upgrade).
+      Источник на объекте — RTSP (BR-R04); медиапуть до клиента — по архитектуре платформы (go2rtc и др.).
     get:
-      summary: Получение видеопотока с камеры из теплицы
+      operationId: getVideoCameraLiveStream
+      summary: Получение видеопотока с камеры (live)
       tags:
         - VideoCamera
+      parameters:
+        - $ref: "#/components/parameters/VideoCameraId"
       responses:
         "101":
-          description: Switching Protocols
-  /api/v1/video-cameras/{id}/video/archive?{time_begin}&{time_end}/video:
-    description: Получить архивное видео с камер
+          description: Switching Protocols (ожидается WebSocket после Upgrade)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/video-cameras/{id}/video/archive:
+    description: |
+      Архивное видео по произвольному интервалу времени (инженер или сценарии с явным интервалом).
+      Для просмотра архива **в контексте найденного события** предпочтительно `GET /api/v1/events/{eventId}/video-cameras/{cameraId}/video/archive`.
     get:
-      summary: Получение архивного видео с камеры
+      operationId: getVideoCameraArchiveStream
+      summary: Архивное видео с камеры по интервалу времени
       tags:
         - VideoCamera
+      parameters:
+        - $ref: "#/components/parameters/VideoCameraId"
+        - name: time_begin
+          in: query
+          required: true
+          description: Начало интервала архива (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+          example: "2026-01-14T08:00:00Z"
+        - name: time_end
+          in: query
+          required: true
+          description: Конец интервала архива (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+          example: "2026-01-14T18:00:00Z"
       responses:
         "101":
-          description: Switching Protocols
+          description: Switching Protocols (ожидается WebSocket после Upgrade)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/greenhouses/{id}/sensor-online-values:
-    description: Получение данных с датчиков с теплицы
+    description: |
+      Поток онлайн-показаний датчиков теплицы после Upgrade до WebSocket.
+      Целевой набор величин для UI live — температура, влажность, кислотность почвы (FR-01, BR-R02); форма сообщений — `GreenhouseSensorLivePayload`.
     get:
-      summary: Получение данных с датчиков с теплицы
-      tags:
-       - DigitalController
-      responses:
-        "101":
-          description: Switching Protocols
-  /api/v1/sensor-analytics:
-    description: Анализ данных по датчикам
-    post:
-      summary: "GraphQL. Данные по датчикам в соответсвии с запровом GraphQL"
+      operationId: getGreenhouseSensorOnlineValues
+      summary: Онлайн-данные датчиков теплицы (WebSocket)
       tags:
         - DigitalController
       parameters:
-        - in: body
-          name: body
-          description: "GraphQL query"
-          required: true
-          schema:
-            type: "object"
-            properties:
-              query:
-                type: "string"
+        - $ref: "#/components/parameters/GreenhouseId"
+      responses:
+        "101":
+          description: |
+            Switching Protocols. После установления соединения сервер присылает сообщения JSON,
+            согласующиеся со схемой `GreenhouseSensorLivePayload` (три показателя и ключи `externalSensorKey` при необходимости).
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/greenhouses/{id}/sensor-snapshot:
+    description: |
+      Синхронный снимок последних значений датчиков теплицы (те же три величины, что и для FR-01).
+      Удобен для health-check и клиентов без WebSocket; live-обновление — через `sensor-online-values`.
+    get:
+      operationId: getGreenhouseSensorSnapshot
+      summary: Снимок показаний датчиков (REST)
+      tags:
+        - DigitalController
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseId"
       responses:
         "200":
-          description: "successful operation"
+          description: Последние известные значения по типам датчиков
           content:
             application/json:
               schema:
-                type: "object"
-                properties:
-                  data:
-                    type: "object"
+                $ref: "#/components/schemas/GreenhouseSensorSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/events/search:
+    description: |
+      Поиск событий по арифметико-логическому выражению над показаниями датчиков, с фильтром по теплицам и интервалу (FR-02).
+      Целевая отзывчивость интерфейса — ответ в течение **10 с** для типичных запросов (NFR-02, BR-R06).
+      **Роль:** инженер; сотруднику без права аналитики — `403`.
+    post:
+      operationId: searchSensorEvents
+      summary: Поиск событий по критерию
+      tags:
+        - Events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventSearchRequest"
+            examples:
+              byExpression:
+                summary: Поиск по выражению и двум теплицам
+                value:
+                  criterionExpression: "temperature > 30 AND humidity < 60"
+                  greenhouseIds:
+                    - "550e8400-e29b-41d4-a716-446655440001"
+                    - "550e8400-e29b-41d4-a716-446655440002"
+                  timeBegin: "2026-01-01T00:00:00Z"
+                  timeEnd: "2026-01-31T23:59:59Z"
+      responses:
+        "200":
+          description: Список найденных событий (может быть пустым)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventSearchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/events/{eventId}:
+    description: Детали события для экрана архива и привязки к теплице (FR-02).
+    get:
+      operationId: getSensorEventById
+      summary: Получить событие по идентификатору
+      tags:
+        - Events
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Найденное событие
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorEventDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/events/{eventId}/sensor-timeseries:
+    description: |
+      Ряд точек для графика динамики датчиков за период события (температура, влажность, кислотность почвы и др. по запросу).
+      Границы по умолчанию — окно события; параметры `time_begin`/`time_end` позволяют сузить интервал внутри окна (FR-02).
+    get:
+      operationId: getSensorTimeseriesForEvent
+      summary: Временной ряд датчиков для события
+      tags:
+        - Events
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+        - name: time_begin
+          in: query
+          required: false
+          description: Начало подинтервала (не раньше начала события)
+          schema:
+            type: string
+            format: date-time
+        - name: time_end
+          in: query
+          required: false
+          description: Конец подинтервала (не позже конца события)
+          schema:
+            type: string
+            format: date-time
+        - name: metric_codes
+          in: query
+          required: false
+          description: Список кодов метрик через запятую (по умолчанию — три основных типа из BR-R02)
+          schema:
+            type: string
+          example: "temperature,humidity,soil_ph"
+      responses:
+        "200":
+          description: Ряды по выбранным метрикам
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorTimeseriesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/events/{eventId}/video-cameras/{cameraId}/video/archive:
+    description: |
+      Архивное видео с выбранной камеры теплицы в **контексте события** (FR-02): временной интервал воспроизведения определяется сервером
+      по событию (и опционально сужается query-параметрами). **Роль:** инженер; `403` для сотрудника без доступа к архиву по событиям.
+    get:
+      operationId: getEventArchiveVideoStream
+      summary: Архивное видео по событию и камере
+      tags:
+        - Events
+        - VideoCamera
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/ArchiveCameraId"
+        - name: time_begin
+          in: query
+          required: false
+          description: Начало подинтервала внутри окна события (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: time_end
+          in: query
+          required: false
+          description: Конец подинтервала внутри окна события (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "101":
+          description: Switching Protocols (ожидается WebSocket после Upgrade)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/sensor-analytics:
+    description: |
+      GraphQL endpoint для произвольных аналитических запросов по телеметрии (агрегаты, отчёты).
+      Поиск событий по выражению для UX «инженерского» поиска задан в `POST /api/v1/events/search`.
+    post:
+      operationId: postSensorAnalyticsGraphQL
+      summary: GraphQL — аналитика по датчикам
+      tags:
+        - DigitalController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GraphQLRequest"
+            examples:
+              sensors:
+                summary: Пример запроса
+                value:
+                  query: "{ sensors { id value } }"
+                  variables: {}
+      responses:
+        "200":
+          description: Успешный ответ GraphQL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphQLResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Access token (как правило JWT), выданный OIDC-провайдером после входа в веб-приложение (FR-03).
+        Содержит `sub` пользователя; членство в организации и роли проверяются в `CNT_GM_WebAPI`.
+  parameters:
+    OrganisationId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор организации (UUID, `organizations.id`)
+      schema:
+        type: string
+        format: uuid
+    GreenhouseId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор теплицы (UUID, `greenhouses.id`)
+      schema:
+        type: string
+        format: uuid
+    VideoCameraId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор камеры (UUID, `greenhouse_cameras.id`)
+      schema:
+        type: string
+        format: uuid
+    ArchiveCameraId:
+      name: cameraId
+      in: path
+      required: true
+      description: Идентификатор камеры теплицы события (UUID, `greenhouse_cameras.id`)
+      schema:
+        type: string
+        format: uuid
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      description: Идентификатор события (аналитическая сущность; UUID)
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Номер страницы (с 1)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      required: false
+      description: Размер страницы (ограничение сверху — по политике API, рекомендуется не более 100)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+  schemas:
+    Greenhouse:
+      type: object
+      required:
+        - id
+        - name
+        - organisationId
+      properties:
+        id:
+          description: Идентификатор теплицы (`greenhouses.id`)
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        code:
+          description: Код теплицы в организации; сопоставляется с `greenhouse_code` на контроллере / в MQTT
+          type: string
+          example: "gh-042"
+        name:
+          description: Наименование теплицы
+          type: string
+          example: Теплица 1
+        organisationId:
+          description: Идентификатор организации-владельца (`organizations.id`)
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        address:
+          description: Адрес или строка для отображения (может дублировать данные локации)
+          type: string
+          example: Россия, Московская область, город Рязань
+    VideoCamera:
+      type: object
+      required:
+        - id
+        - name
+        - greenhouseId
+      properties:
+        id:
+          description: Идентификатор камеры (`greenhouse_cameras.id`)
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440010"
+        cameraCode:
+          description: Уникальный код камеры в теплице (`camera_code`)
+          type: string
+          example: "cam-main"
+        name:
+          description: Наименование камеры
+          type: string
+          example: Камера 1
+        greenhouseId:
+          description: Идентификатор теплицы
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        ipAddress:
+          description: Последний известный IP камеры (опционально, для диагностики; не для клиентского RTSP в браузере)
+          type: string
+          example: 10.14.225.101
+    PagedGreenhouses:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Greenhouse"
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+        totalItems:
+          type: integer
+          minimum: 0
+    PagedVideoCameras:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoCamera"
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+        totalItems:
+          type: integer
+          minimum: 0
+    SensorQuantity:
+      type: string
+      description: Логический тип измерения (согласуется с `sensor_types.code` / полем quantity в MQTT)
+      enum:
+        - temperature
+        - humidity
+        - soil_ph
+    SensorReadingValue:
+      type: object
+      required:
+        - quantity
+        - value
+        - unit
+      properties:
+        quantity:
+          $ref: "#/components/schemas/SensorQuantity"
+        value:
+          type: number
+          format: double
+          example: 22.5
+        unit:
+          type: string
+          description: Единица измерения (`C`, `%`, `pH` и т.д.)
+          example: "C"
+        externalSensorKey:
+          type: string
+          description: Ключ датчика на контроллере (`external_sensor_key` в метаданных)
+          example: "temp-main"
+    GreenhouseSensorLivePayload:
+      type: object
+      description: Контракт сообщения по WebSocket для онлайн-показаний (FR-01)
+      required:
+        - greenhouseId
+        - emittedAt
+        - readings
+      properties:
+        greenhouseId:
+          type: string
+          format: uuid
+        emittedAt:
+          type: string
+          format: date-time
+        readings:
+          type: array
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/SensorReadingValue"
+    GreenhouseSensorSnapshot:
+      type: object
+      required:
+        - greenhouseId
+        - capturedAt
+        - readings
+      properties:
+        greenhouseId:
+          type: string
+          format: uuid
+        capturedAt:
+          type: string
+          format: date-time
+          description: Момент снимка на сервере
+        readings:
+          type: array
+          description: По одному последнему значению на каждую из трёх величин BR-R02, если данные есть
+          items:
+            $ref: "#/components/schemas/SensorReadingValue"
+    EventSearchRequest:
+      type: object
+      required:
+        - criterionExpression
+        - greenhouseIds
+        - timeBegin
+        - timeEnd
+      properties:
+        criterionExpression:
+          type: string
+          description: Арифметико-логическое выражение по показаниям (синтаксис — по спецификации сервера)
+          example: "temperature > 30 AND humidity < 60"
+        greenhouseIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+        timeBegin:
+          type: string
+          format: date-time
+        timeEnd:
+          type: string
+          format: date-time
+    SensorEventSummary:
+      type: object
+      required:
+        - id
+        - greenhouseId
+        - periodBegin
+        - periodEnd
+      properties:
+        id:
+          type: string
+          format: uuid
+        greenhouseId:
+          type: string
+          format: uuid
+        periodBegin:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        label:
+          type: string
+          description: Краткое описание для списка (опционально)
+    EventSearchResponse:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/SensorEventSummary"
+        truncated:
+          type: boolean
+          description: true, если применён лимит выдачи или политика частичного результата (FR-02)
+        message:
+          type: string
+          description: Сообщение для UI (например при усечении результата)
+    SensorEventDetail:
+      allOf:
+        - $ref: "#/components/schemas/SensorEventSummary"
+        - type: object
+          properties:
+            matchedExpression:
+              type: string
+              description: Нормализованное или сохранённое выражение критерия
+            greenhouseName:
+              type: string
+    TimeseriesPoint:
+      type: object
+      required:
+        - time
+        - value
+      properties:
+        time:
+          type: string
+          format: date-time
+        value:
+          type: number
+          format: double
+    SensorSeries:
+      type: object
+      required:
+        - metricCode
+        - points
+      properties:
+        metricCode:
+          type: string
+          example: "temperature"
+        unit:
+          type: string
+          example: "C"
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeseriesPoint"
+    SensorTimeseriesResponse:
+      type: object
+      required:
+        - eventId
+        - greenhouseId
+        - series
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        greenhouseId:
+          type: string
+          format: uuid
+        effectiveBegin:
+          type: string
+          format: date-time
+        effectiveEnd:
+          type: string
+          format: date-time
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/SensorSeries"
+    GraphQLRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Текст GraphQL-запроса
+        variables:
+          type: object
+          additionalProperties: true
+          description: Переменные запроса (опционально)
+        operationName:
+          type: string
+          nullable: true
+          description: Имя операции при нескольких в документе (опционально)
+    GraphQLResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    ProblemDetails:
+      type: object
+      description: Упрощённое описание ошибки (можно заменить на RFC 7807 при внедрении на сервере)
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+        status:
+          type: integer
+  responses:
+    BadRequest:
+      description: Некорректный запрос (валидация, синтаксис выражения и т.д.)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Unauthorized:
+      description: Требуется аутентификация
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Forbidden:
+      description: Доступ запрещён (недостаточно прав по роли или организации, FR-03)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
