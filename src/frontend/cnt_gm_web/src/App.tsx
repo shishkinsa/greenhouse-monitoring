@@ -1,11 +1,14 @@
 import {BrowserRouter, Routes, Route } from 'react-router-dom'
-import WatherPage from './pages/WatherPage';
+import AppLayout from './components/AppLayout';
+import WeatherPage from './pages/WatherPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<WatherPage/>} />
+        <Route path="/" element={<AppLayout />}>
+          <Route path="weather" element={<WeatherPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

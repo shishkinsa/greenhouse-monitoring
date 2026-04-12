@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import Button from "../components/Button";
-import Table from "../components/Table";
+import { Button } from 'antd';
+import WeatherTable from '../components/WeatherTable';
 
 const WatherPage: React.FC = () => {
   const [weatherData, setWeatherData] = useState([]);
@@ -8,19 +8,19 @@ const WatherPage: React.FC = () => {
 
   const fetchWeather = async () => {
     setLoading(true);
-    try{
+    try {
       const response = await fetch('/api/weatherforecast/');
-      if(!response.ok) {
+      if (!response.ok) {
         throw new Error('Ошибка загрузки данных');
       }
       const data = await response.json();
       setWeatherData(data);
     }
-    catch(error){
-        console.error('ОшибкаЖ', error);
-        alert('Не удалось загрузить данные!');
+    catch (error) {
+      console.error('ОшибкаЖ', error);
+      alert('Не удалось загрузить данные!');
     }
-    finally{
+    finally {
       setLoading(false);
     }
   };
@@ -28,10 +28,15 @@ const WatherPage: React.FC = () => {
   return (
     <div>
       <h1>Прогноз погоды</h1>
-      <Button onClick={fetchWeather} isLoading={loading}>
-        Загрузить данные
+      <Button
+        type="primary"
+        onClick={fetchWeather}
+        loading={loading}
+      >
+        {loading ? 'Загрузка...' : 'Загрузить данные'}
       </Button>
-      <Table data={weatherData}/>
+      <br/>
+      <WeatherTable  data={weatherData} loading={loading}/>
     </div>
   );
 };
