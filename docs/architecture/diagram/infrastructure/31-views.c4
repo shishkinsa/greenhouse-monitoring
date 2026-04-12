@@ -2,7 +2,7 @@ views {
     deployment view production_deployment {
         title "Развёртывание: production"
         description """
-        Физическое развёртывание ИС: периметр **443** и **MQTT 8883**, классы трафика, внутренние порты и политика Identity DB — в тексте среды **Production** в `production-deployment.c4`. Деталь протоколов контейнеров — в `docs/architecture/diagram/containers/`.
+        Физическое развёртывание ИС: периметр **443** и **MQTT 8883**, классы трафика, внутренние порты и политика Identity DB — в тексте среды **Production** в `30-production-deployment.c4`. Деталь протоколов контейнеров — в `docs/architecture/diagram/containers/`.
         """
 
         include production.**

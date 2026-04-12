@@ -8,7 +8,7 @@ info:
 
     **Идентификаторы:** в URL и JSON используются UUID, согласованные с метаданными `CNT_GM_DB` (PostgreSQL).
     Код теплицы `code` на объекте и в MQTT (`greenhouse_code` в интеграции edge) сопоставляется с полем `code` в ресурсе теплицы;
-    см. `docs/architecture/diagram/data/cnt_gm_db/metadata_database_structure.md`, `docs/architecture/integration/edge-devices.md`.
+    см. `docs/architecture/diagram/data/cnt_gm_db/20-metadata-database-structure.md`, `docs/architecture/diagram/integration/70-edge-devices.md`.
 
     **Аутентификация:** доступ по bearer-токену; типично **OIDC** access token (JWT) из `CNT_GM_Identity_DB` / веб-клиента (FR-03).
     Роли: сценарии поиска событий и архива по событиям — **инженер**; отказ при недостаточных правах — `403`.
@@ -421,7 +421,7 @@ components:
       name: id
       in: path
       required: true
-      description: Идентификатор камеры (UUID, `greenhouse_cameras.id`)
+      description: Идентификатор камеры (UUID, `video_cameras.id`)
       schema:
         type: string
         format: uuid
@@ -429,7 +429,7 @@ components:
       name: cameraId
       in: path
       required: true
-      description: Идентификатор камеры теплицы события (UUID, `greenhouse_cameras.id`)
+      description: Идентификатор камеры теплицы события (UUID, `video_cameras.id`)
       schema:
         type: string
         format: uuid
@@ -498,12 +498,12 @@ components:
         - greenhouseId
       properties:
         id:
-          description: Идентификатор камеры (`greenhouse_cameras.id`)
+          description: Идентификатор камеры (`video_cameras.id`)
           type: string
           format: uuid
           example: "550e8400-e29b-41d4-a716-446655440010"
         cameraCode:
-          description: Уникальный код камеры в теплице (`camera_code`)
+          description: Уникальный код экземпляра камеры (`video_cameras.camera_code`)
           type: string
           example: "cam-main"
         name:

@@ -16,8 +16,8 @@
 |-----|--------|
 | **Требования** | [NFR-01](../../requirements/non-functional/01-latency-live-stream.md), [NFR-02](../../requirements/non-functional/02-response-time-event-search.md), [NFR-04](../../requirements/non-functional/04-scalability.md), [FR-02](../../requirements/functional/02-event-search-and-archive.md) |
 | **Связанные ADR** | [ADR-0003: PostgreSQL для справочников](0001-use-postgres.md) — метаданные и справочники не смешиваются с потоком телеметрии; [ADR-0001: .NET](0001-dotnet-aspnet-core-backend.md) — клиенты доступа из сервисов .NET |
-| **Диаграммы** | [CNT_GM_Timeseries_DB](../diagram/containers/cnt_gm_timeseries_db/model.c4), связи [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/model.c4); развёртывание: [production-deployment.c4](../diagram/infrastructure/production-deployment.c4) (ноды данных + **ClickHouse Keeper**) |
-| **Документация** | [Расчёт архитектуры](../calc_architecture.md) (колоночная БД / TSDB, объёмы, NFR-02), [tech-stack.md](../../ai/tech-stack.md) |
+| **Диаграммы** | [CNT_GM_Timeseries_DB](../diagram/containers/cnt_gm_timeseries_db/01-model.c4), связи [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/01-model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/01-model.c4); развёртывание: [30-production-deployment.c4](../diagram/infrastructure/30-production-deployment.c4) (ноды данных + **ClickHouse Keeper**) |
+| **Документация** | [Расчёт архитектуры](../01-calc-architecture.md) (колоночная БД / TSDB, объёмы, NFR-02), [tech-stack.md](../../ai/tech-stack.md) |
 
 ---
 
@@ -27,19 +27,19 @@
 
 Система принимает непрерывный поток показаний с датчиков (температура, влажность, кислотность почвы) с масштаба **1000+ теплиц** и нескольких датчиков на объект ([NFR-04](../../requirements/non-functional/04-scalability.md)). Эти данные нужно **долго хранить** (в расчёте — порядка **2 лет**), **эффективно дописывать** и **аналитически запрашивать**, в том числе для **поиска событий** и отчётов инженеров с откликом в пределах **10 с** ([NFR-02](../../requirements/non-functional/02-response-time-event-search.md), [FR-02](../../requirements/functional/02-event-search-and-archive.md)).
 
-Реляционная СУБД для справочников ([ADR-0003](0001-use-postgres.md)) **не** является целевым хранилищем для высокочастотных временных рядов такого объёма: в [calc_architecture.md](../calc_architecture.md) для телеметрии отдельно выделены **колоночная БД / TSDB** и оценки объёма **~120–600 ГБ** за два года (со сжатием — нижняя часть диапазона).
+Реляционная СУБД для справочников ([ADR-0003](0001-use-postgres.md)) **не** является целевым хранилищем для высокочастотных временных рядов такого объёма: в [01-calc-architecture.md](../01-calc-architecture.md) для телеметрии отдельно выделены **колоночная БД / TSDB** и оценки объёма **~120–600 ГБ** за два года (со сжатием — нижняя часть диапазона).
 
 Нужно зафиксировать выбор технологии для контейнера **`CNT_GM_Timeseries_DB`** и роли **записи** (`CNT_GM_SavingService`) и **чтения/поиска** (`CNT_GM_WebAPI`, GraphQL).
 
 ### Предпосылки
 
-- В LikeC4 заданы **ClickHouse** и описание: «БД для хранения и анализа данных с датчиков…» ([model.c4](../diagram/containers/cnt_gm_timeseries_db/model.c4)).
+- В LikeC4 заданы **ClickHouse** и описание: «БД для хранения и анализа данных с датчиков…» ([01-model.c4](../diagram/containers/cnt_gm_timeseries_db/01-model.c4)).
 - Поток MQTT → брокер → **SavingService** записывает телеметрию в ClickHouse (порт **8123** в модели связей); **Web API** обращается к ClickHouse для поиска и выборок (в т.ч. **8443/TCP via TLS** в модели связей к API ClickHouse).
 
 ### Ограничения
 
 - Не дублировать «истину» по телеметрии в PostgreSQL: справочники и ссылки на объекты — в `CNT_GM_DB`, измерения — в `CNT_GM_Timeseries_DB`.
-- Сохранять выполнимость **NFR-02** при проектном объёме данных и схеме запросов из [calc_architecture.md](../calc_architecture.md).
+- Сохранять выполнимость **NFR-02** при проектном объёме данных и схеме запросов из [01-calc-architecture.md](../01-calc-architecture.md).
 
 ---
 
@@ -88,7 +88,7 @@ risks: ["Нагрузочное тестирование запросов пои
 cost: Средний
 complexity: Средняя
 time_to_market: Средний
-risks: ["Пересмотр объёмов и производительности относительно calc_architecture"]
+risks: ["Пересмотр объёмов и производительности относительно 01-calc-architecture.md"]
 ```
 
 ### Вариант C: InfluxDB или иная узкоспециализированная TSDB
@@ -123,7 +123,7 @@ risks: ["Расхождение с LikeC4 и tech-stack"]
 
 ### Координация кластера: ClickHouse Keeper
 
-Для **отказоустойчивости и репликации** (согласованно с [NFR-03](../../requirements/non-functional/03-availability.md) и целевой топологией в [production-deployment.c4](../diagram/infrastructure/production-deployment.c4)) принять **ClickHouse Keeper** как сервис координации кластера:
+Для **отказоустойчивости и репликации** (согласованно с [NFR-03](../../requirements/non-functional/03-availability.md) и целевой топологией в [30-production-deployment.c4](../diagram/infrastructure/30-production-deployment.c4)) принять **ClickHouse Keeper** как сервис координации кластера:
 
 - **Назначение:** хранение метаданных репликации, координация распределённых операций и согласованное состояние реплик; в экосистеме ClickHouse Keeper — рекомендуемая замена **Apache ZooKeeper** для новых развёртываний (совместимый протокол, меньший операционный контур, единая линейка релизов с сервером ClickHouse).
 - **Топология в проекте:** **две ноды ClickHouse** (данные) + **ансамбль Keeper из нечётного числа узлов** (на диаграмме развёртывания — **три** процесса `clickhouse-keeper` для **кворума** при выборах лидера и устойчивости к отказу одного узла). Число нод Keeper не смешивается с числом серверов данных: Keeper не хранит пользовательские таблицы телеметрии.
@@ -137,7 +137,7 @@ risks: ["Расхождение с LikeC4 и tech-stack"]
 
 ### Положительные
 
-- Согласованность с [cnt_gm_timeseries_db/model.c4](../diagram/containers/cnt_gm_timeseries_db/model.c4) и с выводами [calc_architecture.md](../calc_architecture.md) по типу хранилища для MQTT-телеметрии.
+- Согласованность с [cnt_gm_timeseries_db/01-model.c4](../diagram/containers/cnt_gm_timeseries_db/01-model.c4) и с выводами [01-calc-architecture.md](../01-calc-architecture.md) по типу хранилища для MQTT-телеметрии.
 - Возможность наращивания объёма и нагрузки на запись за счёт типичных для ClickHouse паттернов (партиции, merge, сжатие).
 
 ### Отрицательные
@@ -149,7 +149,7 @@ risks: ["Расхождение с LikeC4 и tech-stack"]
 
 - Держать [tech-stack.md](../../ai/tech-stack.md) и описание портов/протоколов согласованными с LikeC4.
 - Зафиксировать в техническом проекте параметры Keeper (endpoints для `keeper_server`, версии, диски) и проверки готовности перед раскаткой схем с репликацией.
-- При смене движка для телеметрии или координации (в т.ч. отказ от Keeper в пользу иной схемы) оформить новый ADR и обновить модель `cnt_gm_timeseries_db` и диаграмму [production-deployment.c4](../diagram/infrastructure/production-deployment.c4).
+- При смене движка для телеметрии или координации (в т.ч. отказ от Keeper в пользу иной схемы) оформить новый ADR и обновить модель `cnt_gm_timeseries_db` и диаграмму [30-production-deployment.c4](../diagram/infrastructure/30-production-deployment.c4).
 
 ---
 

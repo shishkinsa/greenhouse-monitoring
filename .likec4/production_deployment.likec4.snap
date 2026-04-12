@@ -3,7 +3,7 @@
   tags: null,
   links: null,
   _stage: 'layouted',
-  sourcePath: 'docs/architecture/diagram/infrastructure/views.c4',
+  sourcePath: 'docs/architecture/diagram/infrastructure/31-views.c4',
   description: {
     txt: 'Физическое развёртывание ИС мониторинга теплиц',
   },

@@ -12,7 +12,7 @@
 **Связанные артефакты:**
 
 - Контекст и контейнеры: `docs/architecture/diagram/context/`, `docs/architecture/diagram/containers/`
-- Поток аутентификации: [oidc-user-authentication.c4](./oidc-user-authentication.c4)
+- Поток аутентификации: [60-oidc-user-authentication.c4](./60-oidc-user-authentication.c4)
 - Технологический стек: [tech-stack.md](../../../ai/tech-stack.md)
 - ADR по платформе, данным, брокеру, объектному хранилищу, секретам, кэшу: `docs/architecture/adr/0001`–`0008`
 
@@ -48,7 +48,7 @@
 
 **Акторы (из контекстной модели и эксплуатации):**
 
-- **Сотрудник / инженер** — легитимные пользователи SPA, OIDC Authorization Code + PKCE ([oidc-user-authentication.c4](./oidc-user-authentication.c4)).
+- **Сотрудник / инженер** — легитимные пользователи SPA, OIDC Authorization Code + PKCE ([60-oidc-user-authentication.c4](./60-oidc-user-authentication.c4)).
 - **Администратор платформы** — доступ к инфраструктуре, Vault, CI/CD (модель прав не детализирована в ADR; трактуется как высокий привилегированный контур).
 - **Устройства теплицы** — цифровые контроллеры по MQTT (TLS), камеры по RTSP/WebRTC — **периметр объекта**, частично недоверенный.
 - **Внешний нарушитель** — сеть Интернет до reverse proxy и публичные точки входа.
@@ -88,7 +88,7 @@
 |----|--------|--------|-------------------------------------|
 | T-PER-01 | S, I | Кража сессии / токена (XSS, утечка в localStorage, перехват без TLS) | CSP, минимизация inline-скриптов, короткий TTL access token, refresh с ротацией; только HTTPS; см. [ADR-0002](../../../architecture/adr/0002-react-typescript-frontend.md), поток OIDC с PKCE |
 | T-PER-02 | T | Подмена ответа API (MITM) | TLS везде на периметре; HSTS при публичном DNS |
-| T-PER-03 | D | Flood на GraphQL/WebSocket/API | Rate limiting на L7, лимиты размера запросов, таймауты; масштабирование stateless API ([NFR в calc_architecture](../../../architecture/calc_architecture.md)) |
+| T-PER-03 | D | Flood на GraphQL/WebSocket/API | Rate limiting на L7, лимиты размера запросов, таймауты; масштабирование stateless API ([NFR в 01-calc-architecture](../../01-calc-architecture.md)) |
 | T-PER-04 | E | Обход авторизации на уровне API | Проверка scope/ролей на каждом защищённом endpoint; не полагаться только на скрытие UI |
 
 ### 2. Identity (OpenIddict, Identity DB)
@@ -167,7 +167,7 @@
 
 | Тема | Где зафиксировано |
 |------|-------------------|
-| OIDC, JWT, stateless API | [ADR-0001](../../../architecture/adr/0001-dotnet-aspnet-core-backend.md), [oidc-user-authentication.c4](./oidc-user-authentication.c4) |
+| OIDC, JWT, stateless API | [ADR-0001](../../../architecture/adr/0001-dotnet-aspnet-core-backend.md), [60-oidc-user-authentication.c4](./60-oidc-user-authentication.c4) |
 | Клиент SPA | [ADR-0002](../../../architecture/adr/0002-react-typescript-frontend.md) |
 | PostgreSQL, метаданные | [ADR-0003](../../../architecture/adr/0003-use-postgres.md) |
 | ClickHouse | [ADR-0004](../../../architecture/adr/0004-clickhouse-telemetry.md) |

@@ -14,10 +14,10 @@
 
 | Тип | Ссылка |
 |-----|--------|
-| **Требования** | [NFR-03](../../requirements/non-functional/03-availability.md) (доступность компонентов), [NFR-04](../../requirements/non-functional/04-scalability.md); согласованность с [calc_architecture.md](../calc_architecture.md) (stateless WebAPI, сессии в Redis, балансировка) |
+| **Требования** | [NFR-03](../../requirements/non-functional/03-availability.md) (доступность компонентов), [NFR-04](../../requirements/non-functional/04-scalability.md); согласованность с [01-calc-architecture.md](../01-calc-architecture.md) (stateless WebAPI, сессии в Redis, балансировка) |
 | **Связанные ADR** | [ADR-0001: .NET](0001-dotnet-aspnet-core-backend.md) — клиенты Redis из сервисов на ASP.NET Core; [ADR-0005: RabbitMQ](0005-rabbitmq-mqtt-broker.md) — поток телеметрии до SavingService и обновление кэша |
-| **Диаграммы** | [CNT_GM_Redis_DB](../diagram/containers/cnt_gm_redis_db/model.c4), связи [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/model.c4); развёртывание: [production-deployment.c4](../diagram/infrastructure/production-deployment.c4) (зона **Redis + Sentinel** в Kubernetes) |
-| **Документация** | [Расчёт архитектуры](../calc_architecture.md) (раздел «Балансировка нагрузки и периметр», Redis для сессий), [tech-stack.md](../../ai/tech-stack.md) |
+| **Диаграммы** | [CNT_GM_Redis_DB](../diagram/containers/cnt_gm_redis_db/01-model.c4), связи [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/01-model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/01-model.c4); развёртывание: [30-production-deployment.c4](../diagram/infrastructure/30-production-deployment.c4) (зона **Redis + Sentinel** в Kubernetes) |
+| **Документация** | [Расчёт архитектуры](../01-calc-architecture.md) (раздел «Балансировка нагрузки и периметр», Redis для сессий), [tech-stack.md](../../ai/tech-stack.md) |
 
 ---
 
@@ -25,7 +25,7 @@
 
 ### Проблема
 
-Слой **`CNT_GM_WebAPI`** проектируется как **stateless** при горизонтальном масштабировании (**не менее двух инстансов** за балансировщиком): пользовательское состояние сессий должно храниться **вне** процесса API ([calc_architecture.md](../calc_architecture.md)). Параллельно **`CNT_GM_SavingService`** обновляет **кэш последних показаний датчиков** для быстрого чтения онлайн-показаний в **`CNT_GM_Redis_DB`** ([model.c4](../diagram/containers/cnt_gm_redis_db/model.c4)).
+Слой **`CNT_GM_WebAPI`** проектируется как **stateless** при горизонтальном масштабировании (**не менее двух инстансов** за балансировщиком): пользовательское состояние сессий должно храниться **вне** процесса API ([01-calc-architecture.md](../01-calc-architecture.md)). Параллельно **`CNT_GM_SavingService`** обновляет **кэш последних показаний датчиков** для быстрого чтения онлайн-показаний в **`CNT_GM_Redis_DB`** ([01-model.c4](../diagram/containers/cnt_gm_redis_db/01-model.c4)).
 
 Нужно зафиксировать:
 
@@ -34,9 +34,9 @@
 
 ### Предпосылки
 
-- В LikeC4 для **`CNT_GM_Redis_DB`** указаны **Redis** и роли: запись кэша из **SavingService**, чтение и сессии из **WebAPI** ([model.c4](../diagram/containers/cnt_gm_redis_db/model.c4)).
-- В расчёте архитектуры явно указано: сессии — в **Redis**; sticky sessions **не обязательны** при такой модели ([calc_architecture.md](../calc_architecture.md)).
-- Целевое развёртывание: Redis и Sentinel как поды в **одном Kubernetes-кластере** с приложениями ([production-deployment.c4](../diagram/infrastructure/production-deployment.c4)).
+- В LikeC4 для **`CNT_GM_Redis_DB`** указаны **Redis** и роли: запись кэша из **SavingService**, чтение и сессии из **WebAPI** ([01-model.c4](../diagram/containers/cnt_gm_redis_db/01-model.c4)).
+- В расчёте архитектуры явно указано: сессии — в **Redis**; sticky sessions **не обязательны** при такой модели ([01-calc-architecture.md](../01-calc-architecture.md)).
+- Целевое развёртывание: Redis и Sentinel как поды в **одном Kubernetes-кластере** с приложениями ([30-production-deployment.c4](../diagram/infrastructure/30-production-deployment.c4)).
 
 ### Ограничения
 
@@ -123,7 +123,7 @@ risks: ["Vendor lock-in", "расхождение с выбранной моде
 
 **Минусы:**
 
-- Избыточная сложность при проектной нагрузке из [calc_architecture.md](../calc_architecture.md) (RPS/CCU умеренные; основной рост данных — в ClickHouse, не в Redis).
+- Избыточная сложность при проектной нагрузке из [01-calc-architecture.md](../01-calc-architecture.md) (RPS/CCU умеренные; основной рост данных — в ClickHouse, не в Redis).
 
 **Оценка:**
 
@@ -142,7 +142,7 @@ risks: ["Операции resharding", "сложнее клиентская ко
 
 Для **production** зафиксировать связку **репликации Redis (primary + replica)** и **Redis Sentinel** в **нечётном количестве** (на целевой диаграмме — **три Sentinel**) для мониторинга и **автоматического выбора мастера** при отказе.
 
-Развёртывание — **в Kubernetes** в том же кластере, что и прикладные сервисы ([production-deployment.c4](../diagram/infrastructure/production-deployment.c4)); изоляция по **namespace** и сетевые политики — по среде.
+Развёртывание — **в Kubernetes** в том же кластере, что и прикладные сервисы ([30-production-deployment.c4](../diagram/infrastructure/30-production-deployment.c4)); изоляция по **namespace** и сетевые политики — по среде.
 
 Клиенты (**ASP.NET Core**, см. [ADR-0001](0001-dotnet-aspnet-core-backend.md)) должны использовать конфигурацию, совместимую с **обнаружением мастера** после failover (Sentinel-aware клиент или эквивалент в инфраструктуре).
 
@@ -164,7 +164,7 @@ risks: ["Операции resharding", "сложнее клиентская ко
 
 - Уточнить в техническом проекте: политики **TTL** для ключей кэша датчиков, шифрование трафика (**TLS** там, где уже зафиксировано в модели связей WebAPI–Redis), лимиты памяти и **eviction**.
 - Держать [tech-stack.md](../../ai/tech-stack.md) и порты/версии Redis согласованными с эксплуатацией.
-- При смене стратегии (например, только managed cache или Redis Cluster) оформить новый ADR и обновить [production-deployment.c4](../diagram/infrastructure/production-deployment.c4).
+- При смене стратегии (например, только managed cache или Redis Cluster) оформить новый ADR и обновить [30-production-deployment.c4](../diagram/infrastructure/30-production-deployment.c4).
 
 ---
 

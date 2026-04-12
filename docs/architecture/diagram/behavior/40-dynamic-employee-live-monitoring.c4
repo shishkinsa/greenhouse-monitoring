@@ -1,6 +1,6 @@
 // Связанные требования: employee_live_monitoring — US-01, FR-01; engineer_event_search — US-02, FR-02
 // Тип: LikeC4 dynamic view (behavior)
-// Аутентификация: OIDC Authorization Code + PKCE; детальный поток — docs/architecture/diagram/security/oidc-user-authentication.c4
+// Аутентификация: OIDC Authorization Code + PKCE; детальный поток — docs/architecture/diagram/security/60-oidc-user-authentication.c4
 // Идентификаторы в REST/OpenAPI и метаданных — UUID (docs/architecture/openapi/components/gm_openapi.yaml, CNT_GM_DB).
 
 views {
@@ -15,7 +15,7 @@ views {
         greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_identity_web 'OIDC: вход (Authorization Code + PKCE)' {
             notes '''
             **Сводка шагов** (в одном блоке): редирект `/authorize` → форма Identity Web → callback в SPA с `code` → POST token endpoint (PKCE `code_verifier`) → токены в клиенте.
-            Связь из модели: **Authentication**, OpenID Connect. Развернутый поток: `docs/architecture/diagram/security/oidc-user-authentication.c4`.
+            Связь из модели: **Authentication**, OpenID Connect. Развернутый поток: `docs/architecture/diagram/security/60-oidc-user-authentication.c4`.
             '''
         }
 
@@ -49,7 +49,7 @@ views {
         greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_webrtcserver_only 'Live-видео с камеры (go2rtc)\nGET /api/v1/video-cameras/{id}/video' {
             notes '''
             **FR-01**: WebSocket / MSE в браузере; без архивного сценария.
-            HTTP возвращает `101 Switching Protocols`, далее медиа-сигналинг; `{id}` — UUID `greenhouse_cameras.id`. Задержка — NFR-01; детали медиаслоя — контейнер **CNT_GM_WebRTCServer_Only**.
+            HTTP возвращает `101 Switching Protocols`, далее медиа-сигналинг; `{id}` — UUID `video_cameras.id`. Задержка — NFR-01; детали медиаслоя — контейнер **CNT_GM_WebRTCServer_Only**.
             '''
         }
     }
@@ -63,7 +63,7 @@ views {
         }
 
         greenhouse_system.cnt_gm_web -> greenhouse_system.cnt_gm_identity_web 'OIDC: вход (Authorization Code + PKCE)' {
-            notes 'Тот же сводный поток, что у сценария сотрудника; детали — `docs/architecture/diagram/security/oidc-user-authentication.c4`.'
+            notes 'Тот же сводный поток, что у сценария сотрудника; детали — `docs/architecture/diagram/security/60-oidc-user-authentication.c4`.'
         }
 
         greenhouse_system.cnt_gm_identity_web -> greenhouse_system.cnt_gm_identity_webapi 'Authorize и проверка учётных данных (OpenIddict)'

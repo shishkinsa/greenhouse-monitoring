@@ -6,8 +6,8 @@
 
 - **организации** и **связь пользователь ↔ организация** (доступ к теплицам через членство);
 - теплицы и их иерархия расположения;
-- типы и экземпляры датчиков;
-- камеры и привязка к теплицам;
+- типы датчиков и **отдельные экземпляры**: датчик (`sensors`), цифровой контроллер (`digital_controllers`), видеокамера (`video_cameras`);
+- **периоды привязок** с полями **`sdate`** / **`edate`** (дата начала / окончания интервала; `edate = NULL` — интервал открыт): датчик ↔ контроллер, контроллер ↔ теплица, видеокамера ↔ теплица;
 - конфигурация порогов событий;
 - служебные связи для API.
 
@@ -37,10 +37,14 @@ erDiagram
     organizations ||--o{ greenhouses : "tenant"
     regions ||--o{ locations : "contains"
     locations ||--o{ greenhouses : "contains"
-    greenhouses ||--o{ greenhouse_sensors : "has"
-    sensor_types ||--o{ greenhouse_sensors : "typed"
-    greenhouses ||--o{ greenhouse_cameras : "has"
-    greenhouse_sensors ||--o{ sensor_threshold_rules : "has rules"
+    sensor_types ||--o{ sensors : "typed"
+    sensors ||--o{ sensor_digital_controller_links : "attached in period"
+    digital_controllers ||--o{ sensor_digital_controller_links : "hosts in period"
+    digital_controllers ||--o{ greenhouse_digital_controller_installations : "installed in period"
+    greenhouses ||--o{ greenhouse_digital_controller_installations : "hosts in period"
+    video_cameras ||--o{ greenhouse_video_camera_installations : "mounted in period"
+    greenhouses ||--o{ greenhouse_video_camera_installations : "has in period"
+    sensors ||--o{ sensor_threshold_rules : "has rules"
 ```
 
 ---
@@ -139,7 +143,7 @@ erDiagram
 
 ---
 
-## 3) Датчики и типы датчиков
+## 3) Типы датчиков
 
 ### `sensor_types`
 
@@ -157,48 +161,121 @@ erDiagram
 
 Индексы: `idx_sensor_types_code` (unique).
 
-### `greenhouse_sensors`
+---
 
-Экземпляры установленных датчиков в конкретных теплицах.
+## 4) Экземпляры оборудования (датчик, контроллер, видеокамера)
+
+Ниже три **независимых** справочника экземпляров. Привязка к теплице и связь «датчик — контроллер» задаётся **отдельными** таблицами периодов (раздел 5) с полями **`sdate`** / **`edate`**.
+
+### `digital_controllers`
+
+Экземпляр **цифрового контроллера** на объекте (edge), публикующий телеметрию по MQTT.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | `uuid` | PK экземпляра контроллера. |
+| `code` | `varchar(64)` | Внутренний код устройства (интеграции, UI). |
+| `display_name` | `varchar(256)` | Отображаемое имя. |
+| `is_active` | `boolean` | Учётная активность записи. |
+| `created_at` | `timestamptz` | Дата создания. |
+| `updated_at` | `timestamptz` | Дата обновления. |
+
+Индексы: `idx_digital_controllers_code` (unique, если `code` глобально уникален; иначе — по политике организации/площадки).
+
+### `sensors`
+
+Экземпляр **датчика** (логический/физический узел измерения), без прямой привязки к теплице в этой таблице.
 
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `id` | `uuid` | PK экземпляра датчика. |
-| `greenhouse_id` | `uuid` | FK -> `greenhouses.id`. |
 | `sensor_type_id` | `uuid` | FK -> `sensor_types.id`. |
-| `external_sensor_key` | `varchar(128)` | Идентификатор датчика в контроллере/edge. |
-| `display_name` | `varchar(256)` | Имя датчика для UI. |
+| `display_name` | `varchar(256)` | Имя для UI. |
 | `install_position` | `varchar(128)` | Место установки (опционально). |
-| `is_active` | `boolean` | Активность датчика. |
-| `installed_at` | `date` | Дата установки. |
-| `decommissioned_at` | `date` | Дата вывода из эксплуатации. |
+| `is_active` | `boolean` | Учётная активность. |
 | `created_at` | `timestamptz` | Дата создания. |
 | `updated_at` | `timestamptz` | Дата обновления. |
 
-Индексы: `idx_greenhouse_sensors_greenhouse_id`, `idx_greenhouse_sensors_sensor_type_id`, `idx_greenhouse_sensors_external_sensor_key` (unique).
+Индексы: `idx_sensors_sensor_type_id`.
 
----
+### `video_cameras`
 
-## 4) Камеры
-
-### `greenhouse_cameras`
+Экземпляр **IP-видеокамеры** (источник RTSP и т.п.). Привязка к теплице — только через `greenhouse_video_camera_installations`.
 
 | Поле | Тип | Описание |
 |------|-----|----------|
-| `id` | `uuid` | PK камеры. |
-| `greenhouse_id` | `uuid` | FK -> `greenhouses.id`. |
-| `camera_code` | `varchar(64)` | Уникальный код камеры. |
+| `id` | `uuid` | PK экземпляра камеры. |
+| `camera_code` | `varchar(64)` | Уникальный код камеры в интеграции (go2rtc, UI). |
 | `name` | `varchar(256)` | Наименование камеры. |
-| `stream_profile` | `varchar(64)` | Профиль потока (`main`, `sub`, и т.п.). |
-| `is_active` | `boolean` | Активность камеры. |
+| `stream_profile` | `varchar(64)` | Профиль потока по умолчанию (`main`, `sub`, и т.п.). |
+| `is_active` | `boolean` | Учётная активность. |
 | `created_at` | `timestamptz` | Дата создания. |
 | `updated_at` | `timestamptz` | Дата обновления. |
 
-Индексы: `idx_greenhouse_cameras_greenhouse_id`, `idx_greenhouse_cameras_camera_code` (unique).
+Индексы: `idx_video_cameras_camera_code` (unique).
 
 ---
 
-## 5) Правила порогов для событий
+## 5) Периоды привязок (`sdate` / `edate`)
+
+Поля **`sdate`** и **`edate`** — границы интервала (**включительно** по смыслу периода; уточнение «закрытый/полуоткрытый» интервал — в приложении). **`edate`** может быть **`NULL`**: привязка действует с `sdate` без заранее заданного окончания.
+
+### `greenhouse_digital_controller_installations`
+
+Установка **контроллера** на **теплицу** в заданный период (где физически обслуживается объект).
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | `uuid` | PK строки установки. |
+| `digital_controller_id` | `uuid` | FK -> `digital_controllers.id`. |
+| `greenhouse_id` | `uuid` | FK -> `greenhouses.id`. |
+| `sdate` | `date` | Начало действия привязки контроллера к теплице. |
+| `edate` | `date` | Конец действия; `NULL` — открытый интервал. |
+| `created_at` | `timestamptz` | Дата создания записи. |
+| `updated_at` | `timestamptz` | Дата обновления. |
+
+Индексы: `idx_gdc_install_controller`, `idx_gdc_install_greenhouse`.  
+Ограничение целостности (на уровне приложения или exclusion в PostgreSQL): непересекающиеся интервалы для одного `digital_controller_id` (и при необходимости — для пары контроллер–теплица).
+
+### `sensor_digital_controller_links`
+
+Подключение **экземпляра датчика** к **экземпляру контроллера** в заданный период. Здесь же задаётся ключ канала на стороне контроллера.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | `uuid` | PK связи (удобно для аудита; см. также пороги). |
+| `sensor_id` | `uuid` | FK -> `sensors.id`. |
+| `digital_controller_id` | `uuid` | FK -> `digital_controllers.id`. |
+| `external_sensor_key` | `varchar(128)` | Идентификатор канала/датчика в прошивке контроллера (MQTT payload). |
+| `sdate` | `date` | Начало действия подключения датчика к контроллеру. |
+| `edate` | `date` | Конец действия; `NULL` — открытый интервал. |
+| `created_at` | `timestamptz` | Дата создания. |
+| `updated_at` | `timestamptz` | Дата обновления. |
+
+Индексы: `idx_sdc_links_sensor`, `idx_sdc_links_controller`, уникальность активного ключа на контроллере: частичный уникальный индекс на `(digital_controller_id, external_sensor_key)` при открытом интервале или в рамках непересекающихся дат (политика — в приложении).  
+Ограничение: в один момент времени один `sensor_id` не должен быть подключён к двум контроллерам (пересечение интервалов).
+
+### `greenhouse_video_camera_installations`
+
+Установка **видеокамеры** на **теплицу** в заданный период.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | `uuid` | PK строки установки. |
+| `video_camera_id` | `uuid` | FK -> `video_cameras.id`. |
+| `greenhouse_id` | `uuid` | FK -> `greenhouses.id`. |
+| `sdate` | `date` | Начало действия установки камеры на теплице. |
+| `edate` | `date` | Конец действия; `NULL` — открытый интервал. |
+| `created_at` | `timestamptz` | Дата создания. |
+| `updated_at` | `timestamptz` | Дата обновления. |
+
+Индексы: `idx_gvc_install_camera`, `idx_gvc_install_greenhouse`.
+
+**Производная привязка «датчик — теплица»** для заданного момента времени: существуют пересекающиеся по датам записи в `sensor_digital_controller_links` и `greenhouse_digital_controller_installations` с общим `digital_controller_id` (пересечение интервалов `sdate`/`edate`).
+
+---
+
+## 6) Правила порогов для событий
 
 ### `sensor_threshold_rules`
 
@@ -207,7 +284,7 @@ erDiagram
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `id` | `uuid` | PK правила. |
-| `greenhouse_sensor_id` | `uuid` | FK -> `greenhouse_sensors.id`. |
+| `sensor_id` | `uuid` | FK -> `sensors.id` (экземпляр датчика). |
 | `rule_code` | `varchar(64)` | Код правила (`high_temp`, `low_humidity`). |
 | `operator` | `varchar(8)` | Оператор (`>`, `>=`, `<`, `<=`, `between`). |
 | `threshold_min` | `numeric(12,4)` | Нижний порог (если применимо). |
@@ -228,7 +305,7 @@ erDiagram
 ### Связь с `CNT_GM_Timeseries_DB` (ClickHouse)
 
 - Временные ряды хранят только `sensor_id`, `greenhouse_id`, `metric_code`.
-- Эти идентификаторы ссылаются на `greenhouse_sensors.id` и `greenhouses.id` в `CNT_GM_DB`.
+- `sensor_id` ссылается на **`sensors.id`** в `CNT_GM_DB`; `greenhouse_id` — на **`greenhouses.id`** (контекст теплицы для строки телеметрии должен быть согласован с активными привязками контроллера и датчика на момент измерения).
 - Обогащение (названия, типы, расположение) выполняет `CNT_GM_WebAPI`.
 
 ### Связь с `CNT_GM_Identity_DB`
@@ -246,16 +323,21 @@ erDiagram
 - `greenhouses.organization_id` -> `organizations.id` (`ON DELETE RESTRICT`)
 - `greenhouses.location_id` -> `locations.id` (`ON DELETE RESTRICT`)
 - `locations.region_id` -> `regions.id` (`ON DELETE RESTRICT`)
-- `greenhouse_sensors.greenhouse_id` -> `greenhouses.id` (`ON DELETE RESTRICT`)
-- `greenhouse_sensors.sensor_type_id` -> `sensor_types.id` (`ON DELETE RESTRICT`)
-- `greenhouse_cameras.greenhouse_id` -> `greenhouses.id` (`ON DELETE CASCADE` допустим для cleanup)
-- `sensor_threshold_rules.greenhouse_sensor_id` -> `greenhouse_sensors.id` (`ON DELETE CASCADE`)
+- `sensors.sensor_type_id` -> `sensor_types.id` (`ON DELETE RESTRICT`)
+- `greenhouse_digital_controller_installations.digital_controller_id` -> `digital_controllers.id` (`ON DELETE RESTRICT`)
+- `greenhouse_digital_controller_installations.greenhouse_id` -> `greenhouses.id` (`ON DELETE RESTRICT`)
+- `sensor_digital_controller_links.sensor_id` -> `sensors.id` (`ON DELETE RESTRICT`)
+- `sensor_digital_controller_links.digital_controller_id` -> `digital_controllers.id` (`ON DELETE RESTRICT`)
+- `greenhouse_video_camera_installations.video_camera_id` -> `video_cameras.id` (`ON DELETE RESTRICT`)
+- `greenhouse_video_camera_installations.greenhouse_id` -> `greenhouses.id` (`ON DELETE RESTRICT` или `CASCADE` по политике очистки)
+- `sensor_threshold_rules.sensor_id` -> `sensors.id` (`ON DELETE CASCADE`)
 
 ---
 
 ## Связанные документы
 
-- Контейнер БД: [cnt_gm_db/model.c4](../../containers/cnt_gm_db/model.c4)
+- Визуальная ERD: [21-erd-cnt-gm-db.drawio](21-erd-cnt-gm-db.drawio) — при расхождении с таблицами в этом файле **источником истины** считается текстовая модель выше (файл drawio обновляется отдельно).
+- Контейнер БД: [cnt_gm_db/01-model.c4](../../containers/cnt_gm_db/01-model.c4)
 - ADR по PostgreSQL: [ADR-0003](../../../adr/0003-use-postgres.md)
-- Структура БД Identity (без организаций): [identity_database_structure.md](../cnt_gm_identity_db/identity_database_structure.md)
-- Структура БД телеметрии: [timeseries_database_structure.md](../cnt_gm_timeseries_db/timeseries_database_structure.md)
+- Структура БД Identity (без организаций): [22-identity-database-structure.md](../cnt_gm_identity_db/22-identity-database-structure.md)
+- Структура БД телеметрии: [24-timeseries-database-structure.md](../cnt_gm_timeseries_db/24-timeseries-database-structure.md)

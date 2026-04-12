@@ -29,7 +29,7 @@ flowchart LR
   CAM -->|RTSP RTP/UDP| G2
 ```
 
-Классы трафика разделены: **MQTT** (телеметрия) и **RTSP/медиа** (видео) — отдельные каналы и типично отдельные сетевые политики ([пример деплоя](../architecture/diagram/infrastructure/deployment-diagram-prompt-example.md)).
+Классы трафика разделены: **MQTT** (телеметрия) и **RTSP/медиа** (видео) — отдельные каналы и типично отдельные сетевые политики ([пример деплоя](../infrastructure/32-deployment-diagram-prompt-example.md)).
 
 ---
 
@@ -42,27 +42,27 @@ flowchart LR
 | Протокол | MQTT **v3.1.1** или **v5.0** (уточнить в ТКП; брокер — RabbitMQ MQTT plugin) |
 | Транспорт | **TLS** поверх TCP (типичный периметр **8883**; фактический порт и hostname — из эксплуатационной конфигурации) |
 | Направление | Контроллер **только публикует** (publish); подписки на стороне контроллера не требуются для базового сценария телеметрии |
-| Сессия | Постоянное соединение на объект; оценка масштаба **~1000** одновременных MQTT-сессий по всем теплицам ([calc_architecture.md](../architecture/calc_architecture.md)) |
+| Сессия | Постоянное соединение на объект; оценка масштаба **~1000** одновременных MQTT-сессий по всем теплицам ([01-calc-architecture.md](../../01-calc-architecture.md)) |
 
 **Аутентификация** (на выбор проекта поставщика оборудования, единообразие фиксируется в ТКП):
 
 - пары **username/password** по TLS; или
 - клиентские **сертификаты** (mTLS).
 
-Учётные данные и корневаой CA для проверки сервера брокера выдаются при **онбординге** теплицы/контроллера; хранение секретов на стороне платформы — см. [ADR-0007](../architecture/adr/0007-hashicorp-vault-secrets.md).
+Учётные данные и корневаой CA для проверки сервера брокера выдаются при **онбординге** теплицы/контроллера; хранение секретов на стороне платформы — см. [ADR-0007](../../adr/0007-hashicorp-vault-secrets.md).
 
 ### 2.2. Идентификация объектов
 
-Связь с метаданными PostgreSQL ([`greenhouses`](../../architecture/diagram/data/cnt_gm_db/metadata_database_structure.md#greenhouses), [`greenhouse_sensors`](../../architecture/diagram/data/cnt_gm_db/metadata_database_structure.md#greenhouse_sensors)):
+Связь с метаданными PostgreSQL: [`greenhouses`](../data/cnt_gm_db/20-metadata-database-structure.md#greenhouses), экземпляры [`digital_controllers`](../data/cnt_gm_db/20-metadata-database-structure.md#digital_controllers), [`sensors`](../data/cnt_gm_db/20-metadata-database-structure.md#sensors), периоды [`greenhouse_digital_controller_installations`](../data/cnt_gm_db/20-metadata-database-structure.md#greenhouse_digital_controller_installations) и [`sensor_digital_controller_links`](../data/cnt_gm_db/20-metadata-database-structure.md#sensor_digital_controller_links) с полями **`sdate`** / **`edate`**.
 
 - У теплицы в ИС есть стабильный **`code`** (код теплицы в организации).
-- У каждого экземпляра датчика — **`external_sensor_key`**, согласованный с прошивкой контроллера (уникален в рамках теплицы).
+- У каждой пары «датчик ↔ контроллер» в активном интервале — **`external_sensor_key`** в [`sensor_digital_controller_links`](../data/cnt_gm_db/20-metadata-database-structure.md#sensor_digital_controller_links), согласованный с прошивкой (уникален в рамках **контроллера** в этот период).
 
-Контроллер должен позволять **настройку** `greenhouse_code` (или эквивалентного внешнего идентификатора, однозначно сопоставимого с `greenhouses.code`) и ключей датчиков так, чтобы они совпали с записями в БД.
+Контроллер должен позволять **настройку** `greenhouse_code` (или эквивалентного внешнего идентификатора, однозначно сопоставимого с `greenhouses.code`) и ключей датчиков так, чтобы они совпали с записями в БД (в т.ч. с учётом периодов **`sdate`/`edate`**).
 
 ### 2.3. Соглашение по топикам (черновик контракта)
 
-Ниже — **рекомендуемая** схема для согласования с вендором; финальная карта топиков → exchange/queue RabbitMQ фиксируется в интеграционной спецификации брокера ([ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md)).
+Ниже — **рекомендуемая** схема для согласования с вендором; финальная карта топиков → exchange/queue RabbitMQ фиксируется в интеграционной спецификации брокера ([ADR-0005](../../adr/0005-rabbitmq-mqtt-broker.md)).
 
 Префикс:
 
@@ -118,7 +118,7 @@ gm/{organization_code}/{greenhouse_code}/telemetry/{sensor_reading|lifecycle}
 Правила:
 
 - **`greenhouse_id`** (опционально) — UUID теплицы в ИС (`greenhouses.id`); дублирует привязку рядом с **`greenhouse_code`** для трассировки и согласования с API/ClickHouse. Если передан, должен соответствовать записи с тем же `code`.
-- **`quantity`** должен однозначно сопоставляться с типами датчиков в ИС (`temperature`, `humidity`, `soil_ph` — см. [`sensor_types.code`](../../architecture/diagram/data/cnt_gm_db/metadata_database_structure.md#sensor_types)).
+- **`quantity`** должен однозначно сопоставляться с типами датчиков в ИС (`temperature`, `humidity`, `soil_ph` — см. [`sensor_types.code`](../data/cnt_gm_db/20-metadata-database-structure.md#sensor_types)).
 - **`value`** — число; допустимый диапазон согласуется с физикой и справочником типов.
 - **`device_time`** — время на контроллере (желательно с offset); при отсутствии доверенного времени на устройстве в ТКП описывается fallback (время приёма на брокере).
 
@@ -143,14 +143,14 @@ gm/{organization_code}/{greenhouse_code}/telemetry/{sensor_reading|lifecycle}
 | Параметр | Значение / ожидание |
 |----------|---------------------|
 | Протокол | **RTSP 1.0** (как минимум); конкретный профиль (H.264/H.265, AAC и т.д.) — по модели камеры |
-| Транспорт | Типично **554/TCP** для сигналинга; **RTP** (часто UDP **5004–5005** или диапазон, задаваемый камерой) для медиа — согласно модели связей [CNT_GM_WebRTCServer_Only](../architecture/diagram/containers/cnt_gm_webrtcserver_only/model.c4) |
+| Транспорт | Типично **554/TCP** для сигналинга; **RTP** (часто UDP **5004–5005** или диапазон, задаваемый камерой) для медиа — согласно модели связей [CNT_GM_WebRTCServer_Only](../containers/cnt_gm_webrtcserver_only/01-model.c4) |
 | Направление | Камера — **сервер** RTSP; **go2rtc** — **клиент**, инициирующий подключение к камере (исходящий из медиа-сегмента к VLAN камер) |
 
 Количество камер на теплицу — **до 5** ([BR-R02](../../requirements/business/03-business-rules.md#br-r02-состав-оборудования-в-теплице)).
 
 ### 3.2. Идентификация и метаданные
 
-В PostgreSQL камера описана в [`greenhouse_cameras`](../../architecture/diagram/data/cnt_gm_db/metadata_database_structure.md#greenhouse_cameras):
+В PostgreSQL экземпляр камеры — [`video_cameras`](../data/cnt_gm_db/20-metadata-database-structure.md#video_cameras); установка на теплицу задаётся периодом в [`greenhouse_video_camera_installations`](../data/cnt_gm_db/20-metadata-database-structure.md#greenhouse_video_camera_installations) (**`sdate`**, **`edate`**).
 
 - **`camera_code`** — уникальный код в рамках интеграции (сопоставление с конфигурацией go2rtc / внутренним именем потока).
 - **`stream_profile`** — например `main` / `sub` для выбора URL основного или субпотока.
@@ -168,7 +168,7 @@ rtsp://{user}:{password}@{camera_host}:{554}/Streaming/Channels/{channel}{@strea
 ### 3.3. Требования к сети и безопасности
 
 - Доступность RTSP из **сегмента, где размещён go2rtc**, с учётом firewall (часто выделенный VLAN камер).
-- Рекомендуется **аутентификация RTSP** (Digest/Basic — по возможностям камеры); см. также риски в [threat-model](../architecture/diagram/security/threat-model.md).
+- Рекомендуется **аутентификация RTSP** (Digest/Basic — по возможностям камеры); см. также риски в [threat-model](../security/61-threat-model.md).
 
 ### 3.4. Доставка в браузер
 
@@ -187,7 +187,7 @@ rtsp://{user}:{password}@{camera_host}:{554}/Streaming/Channels/{channel}{@strea
 
 ## 5. Открытые пункты для ТКП / поставщика
 
-1. Окончательная **карта топиков MQTT** и привязка к **exchange/queue** RabbitMQ (дополнение к [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md)).
+1. Окончательная **карта топиков MQTT** и привязка к **exchange/queue** RabbitMQ (дополнение к [ADR-0005](../../adr/0005-rabbitmq-mqtt-broker.md)).
 2. Выбор **MQTT v3.1.1 vs v5** и поддерживаемые **возможности** плагина на принятой версии RabbitMQ.
 3. Необходимость **LWT** (Last Will) и **retained** сообщений для статуса контроллера.
 4. Список **моделей камер** и закреплённые **RTSP URL** / кодеки для тестовых стендов.
@@ -197,8 +197,8 @@ rtsp://{user}:{password}@{camera_host}:{554}/Streaming/Channels/{channel}{@strea
 
 ## Связанные артефакты
 
-- [ADR-0005 — RabbitMQ и MQTT](../architecture/adr/0005-rabbitmq-mqtt-broker.md)
-- [ADR-0004 — ClickHouse для телеметрии](../architecture/adr/0004-clickhouse-telemetry.md)
-- [Модель CNT_Digital_Controller](../architecture/diagram/containers/cnt_greenhouse/cnt_digital_controller/model.c4)
-- [Модель CNT_GM_WebRTCServer_Only](../architecture/diagram/containers/cnt_gm_webrtcserver_only/model.c4)
-- [Структура метаданных PostgreSQL](../architecture/diagram/data/cnt_gm_db/metadata_database_structure.md)
+- [ADR-0005 — RabbitMQ и MQTT](../../adr/0005-rabbitmq-mqtt-broker.md)
+- [ADR-0004 — ClickHouse для телеметрии](../../adr/0004-clickhouse-telemetry.md)
+- [Модель CNT_Digital_Controller](../containers/cnt_greenhouse/cnt_digital_controller/01-model.c4)
+- [Модель CNT_GM_WebRTCServer_Only](../containers/cnt_gm_webrtcserver_only/01-model.c4)
+- [Структура метаданных PostgreSQL](../data/cnt_gm_db/20-metadata-database-structure.md)

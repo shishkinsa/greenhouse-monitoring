@@ -1,16 +1,16 @@
 # Пример промта для диаграммы развёртывания
 
-Используйте шаблон ниже в чате с ИИ (или в Cursor), когда нужно сгенерировать или обновить **deployment**-диаграмму **ИС Greenhouse Monitoring** в формате **LikeC4** (`deployment { … }`), согласованную с расчётом нагрузки, контейнерной моделью и текущим эталоном `production-deployment.c4`.
+Используйте шаблон ниже в чате с ИИ (или в Cursor), когда нужно сгенерировать или обновить **deployment**-диаграмму **ИС Greenhouse Monitoring** в формате **LikeC4** (`deployment { … }`), согласованную с расчётом нагрузки, контейнерной моделью и текущим эталоном `30-production-deployment.c4`.
 
 ## Контекст архитектуры (кратко)
 
 - **Система:** мониторинг теплиц — веб-SPA и API, OIDC (OpenIddict), live/архивное видео (go2rtc), телеметрия с контроллеров по **MQTT** в **RabbitMQ** (внутренние потребители — по **AMQP**), временные ряды в **ClickHouse**, метаданные в **PostgreSQL**, кэш — **Redis** с **Sentinel**, секреты — **HashiCorp Vault**, архив видео — **MinIO (S3)**.
-- **Логическая модель LikeC4:** система `greenhouse_system` («Greenhouse Monitoring»), контейнеры задаются в `docs/architecture/diagram/containers/**/model.c4` и расширяют `greenhouse_system`.
-- **Масштаб и NFR** зафиксированы в `docs/architecture/calc_architecture.md`: ~1000 сотрудников и ~50 инженеров (US-01, US-02, NFR-04), 1000+ теплиц, MQTT ≈1000 постоянных соединений, HA по **NFR-03**; вторые узлы там, где нужна отказоустойчивость, а не только запас по производительности.
+- **Логическая модель LikeC4:** система `greenhouse_system` («Greenhouse Monitoring»), контейнеры задаются в `docs/architecture/diagram/containers/**/01-model.c4` и расширяют `greenhouse_system`.
+- **Масштаб и NFR** зафиксированы в `docs/architecture/01-calc-architecture.md`: ~1000 сотрудников и ~50 инженеров (US-01, US-02, NFR-04), 1000+ теплиц, MQTT ≈1000 постоянных соединений, HA по **NFR-03**; вторые узлы там, где нужна отказоустойчивость, а не только запас по производительности.
 
 ## Эталонная топология production (не выдумывать заново без причины)
 
-Ориентир — `docs/architecture/diagram/infrastructure/production-deployment.c4`:
+Ориентир — `docs/architecture/diagram/infrastructure/30-production-deployment.c4`:
 
 | Слой | Содержимое (как в эталоне) |
 |------|----------------------------|
@@ -50,16 +50,16 @@
 
 ## Входные материалы для промта
 
-- Расчёт и обоснование узлов: `docs/architecture/calc_architecture.md`
+- Расчёт и обоснование узлов: `docs/architecture/01-calc-architecture.md`
 - Контейнеры и протоколы: `docs/architecture/diagram/containers/`
-- Эталон развёртывания: `docs/architecture/diagram/infrastructure/production-deployment.c4`
-- Вид диаграммы (include/exclude, заголовок): `docs/architecture/diagram/infrastructure/views.c4`
+- Эталон развёртывания: `docs/architecture/diagram/infrastructure/30-production-deployment.c4`
+- Вид диаграммы (include/exclude, заголовок): `docs/architecture/diagram/infrastructure/31-views.c4`
 - Поведение и OIDC при необходимости уточнений: `docs/architecture/diagram/behavior/`, `docs/architecture/diagram/security/`
 
 ## Шаблон промта (скопируйте и доработайте блоки в угловых скобках)
 
 ```text
-Ты — архитектор. Нужно описать целевое развёртывание ИС **Greenhouse Monitoring** в LikeC4: `deployment { environment production 'Production' { … } }`, согласованное с `docs/architecture/calc_architecture.md` и контейнерной моделью `greenhouse_system`.
+Ты — архитектор. Нужно описать целевое развёртывание ИС **Greenhouse Monitoring** в LikeC4: `deployment { environment production 'Production' { … } }`, согласованное с `docs/architecture/01-calc-architecture.md` и контейнерной моделью `greenhouse_system`.
 
 Уже принятая база (сохраняй, если задача — точечное изменение, а не новая система):
 - Периметр: L7 `edge` (Nginx, 443/TLS) и отдельно `edge_mqtt` (8883/TLS → RabbitMQ MQTT); контроллеры не ходят в кластер по HTTP Ingress.
@@ -73,18 +73,18 @@
 Требования к результату:
 - Явно опиши три класса трафика (браузер L7, MQTT с поля, RTSP с камер).
 - Укажи технологии узлов и число реплик/кворум там, где это важно для HA (NFR-03).
-- Не перегружай рёбрами все внутренние связи приложения — резюме портов в `description` среды или зон, как в текущем `production-deployment.c4`.
-- Если добавляешь вид: `views { deployment view … }` с `include production.**`, при необходимости `exclude` логических рёбер из модели контейнеров (см. `infrastructure/views.c4`).
+- Не перегружай рёбрами все внутренние связи приложения — резюме портов в `description` среды или зон, как в текущем `30-production-deployment.c4`.
+- Если добавляешь вид: `views { deployment view … }` с `include production.**`, при необходимости `exclude` логических рёбер из модели контейнеров (см. `infrastructure/31-views.c4`).
 
 Выход:
 1) Фрагмент или полный файл `.c4` с `deployment { … }`.
-2) При необходимости — правки к `views.c4`.
+2) При необходимости — правки к `31-views.c4`.
 3) Список допущений и открытых вопросов.
 ```
 
 ## Подсказки по стилю репозитория
 
-- Заголовок вида и пояснение «что на схеме и что в тексте» — в `views.c4` (`deployment view production_deployment`).
+- Заголовок вида и пояснение «что на схеме и что в тексте» — в `31-views.c4` (`deployment view production_deployment`).
 - На deployment-часто **исключают** дублирующие логические связи OIDC/Web→WebRTC из контейнерной модели, оставляя периметр и узлы.
 - Связи периметра к подам оформляйте с `technology`: например `443/TLS`, `8883/TCP via TLS`.
 - После правок прогоните сборку LikeC4 и обновите снапшоты, если они используются в CI.
@@ -93,7 +93,7 @@
 
 | Путь | Назначение |
 |------|------------|
-| `production-deployment.c4` | Модель развёртывания production |
-| `views.c4` | Вид `production_deployment`, include/exclude |
+| `30-production-deployment.c4` | Модель развёртывания production |
+| `31-views.c4` | Вид `production_deployment`, include/exclude |
 | `docs/architecture/diagram/containers/` | Контейнеры `greenhouse_system.*` |
-| `docs/architecture/calc_architecture.md` | RPS/CCU, брокер, HA, объёмы хранения |
+| `docs/architecture/01-calc-architecture.md` | RPS/CCU, брокер, HA, объёмы хранения |

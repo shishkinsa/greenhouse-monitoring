@@ -16,8 +16,8 @@
 |-----|--------|
 | **Требования** | [FR-02](../../requirements/functional/02-event-search-and-archive.md) (архивное видео по событиям), [NFR-04](../../requirements/non-functional/04-scalability.md) (масштаб хранения) |
 | **Связанные ADR** | [ADR-0004: ClickHouse](0004-clickhouse-telemetry.md) — телеметрия датчиков не смешивается с объектным архивом видео |
-| **Диаграммы** | [CNT_GM_S3](../diagram/containers/cnt_gm_s3/model.c4), [CNT_GM_WebRTCServer_History](../diagram/containers/cnt_gm_webrtcserver_history/model.c4) |
-| **Документация** | [Расчёт архитектуры](../calc_architecture.md) (V_video, S3-совместимое хранилище, lifecycle), [tech-stack.md](../../ai/tech-stack.md) |
+| **Диаграммы** | [CNT_GM_S3](../diagram/containers/cnt_gm_s3/01-model.c4), [CNT_GM_WebRTCServer_History](../diagram/containers/cnt_gm_webrtcserver_history/01-model.c4) |
+| **Документация** | [Расчёт архитектуры](../01-calc-architecture.md) (V_video, S3-совместимое хранилище, lifecycle), [tech-stack.md](../../ai/tech-stack.md) |
 
 ---
 
@@ -25,13 +25,13 @@
 
 ### Проблема
 
-Архивное видео с камер теплиц записывается **сегментами** и должно храниться в **объектном** хранилище с **S3 API**: **`CNT_GM_WebRTCServer_History`** читает и пишет сегменты по **HTTPS, S3 API** ([model.c4](../diagram/containers/cnt_gm_webrtcserver_history/model.c4)). Объёмы по [calc_architecture.md](../calc_architecture.md) — **до ~162 ТБ за 30 дней** (верхняя оценка; фактически меньше при VBR, записи по событиям, снижении FPS и lifecycle). Для таких объёмов в расчёте явно выделено **S3-совместимое** хранилище: масштабирование по ёмкости, **низкая стоимость за ГБ**, **lifecycle** и классы хранения ([NFR-04](../../requirements/non-functional/04-scalability.md)).
+Архивное видео с камер теплиц записывается **сегментами** и должно храниться в **объектном** хранилище с **S3 API**: **`CNT_GM_WebRTCServer_History`** читает и пишет сегменты по **HTTPS, S3 API** ([01-model.c4](../diagram/containers/cnt_gm_webrtcserver_history/01-model.c4)). Объёмы по [01-calc-architecture.md](../01-calc-architecture.md) — **до ~162 ТБ за 30 дней** (верхняя оценка; фактически меньше при VBR, записи по событиям, снижении FPS и lifecycle). Для таких объёмов в расчёте явно выделено **S3-совместимое** хранилище: масштабирование по ёмкости, **низкая стоимость за ГБ**, **lifecycle** и классы хранения ([NFR-04](../../requirements/non-functional/04-scalability.md)).
 
 Нужно зафиксировать продукт для контейнера **`CNT_GM_S3`**, сохраняя **контракт S3 API** для медиа-слоя и не привязывая архитектуру к одному публичному облаку без альтернативы on-prem.
 
 ### Предпосылки
 
-- В LikeC4 для `CNT_GM_S3` указаны **MinIO** и описание «S3 хранилище для архива видео с камер» ([model.c4](../diagram/containers/cnt_gm_s3/model.c4)).
+- В LikeC4 для `CNT_GM_S3` указаны **MinIO** и описание «S3 хранилище для архива видео с камер» ([01-model.c4](../diagram/containers/cnt_gm_s3/01-model.c4)).
 - Интеграция идёт через стандартный **S3 API** (не проприетарный SDK одного вендора на стороне протокола).
 
 ### Ограничения
@@ -120,7 +120,7 @@ risks: ["Полная переработка ingestion архива"]
 
 ### Положительные
 
-- Соответствие [cnt_gm_s3/model.c4](../diagram/containers/cnt_gm_s3/model.c4) и выводам [calc_architecture.md](../calc_architecture.md) про объектное S3-хранилище для видеоархива.
+- Соответствие [cnt_gm_s3/01-model.c4](../diagram/containers/cnt_gm_s3/01-model.c4) и выводам [01-calc-architecture.md](../01-calc-architecture.md) про объектное S3-хранилище для видеоархива.
 - Переносимость клиентов, использующих S3 API, между совместимыми backend при необходимости.
 
 ### Отрицательные

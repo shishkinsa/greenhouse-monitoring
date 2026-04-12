@@ -2,7 +2,7 @@
 
 Используйте текст ниже как основу для чата с ИИ или чек-лист при ручном создании **dynamic view** сценария **входа пользователя** в LikeC4. Подставьте пути к файлам при необходимости.
 
-Ориентир по проекту: [oidc-user-authentication.c4](oidc-user-authentication.c4).
+Ориентир по проекту: [60-oidc-user-authentication.c4](60-oidc-user-authentication.c4).
 
 ---
 
@@ -14,14 +14,14 @@
 Цель: сгенерировать один блок `views { ... }` с **одним dynamic view**, описывающим процесс **аутентификации пользователя** (вход в систему и получение доступа к API ИС), без изменения смысла уже принятой контейнерной архитектуры и без выдумывания новых сервисов.
 
 ### Источники правды (прочитай и опирайся на них)
-- Акторы и система: docs/architecture/diagram/context/model.c4 (employee, engineer, greenhouse_system).
-- Контейнеры Identity и приложения ИС: docs/architecture/diagram/containers/cnt_gm_web/model.c4, cnt_gm_identity_web/model.c4, cnt_gm_identity_webapi/model.c4, cnt_gm_identity_db/model.c4, cnt_gm_webapi/model.c4 (связи OIDC, JWKS, Bearer).
+- Акторы и система: docs/architecture/diagram/context/01-model.c4 (employee, engineer, greenhouse_system).
+- Контейнеры Identity и приложения ИС: docs/architecture/diagram/containers/cnt_gm_web/01-model.c4, cnt_gm_identity_web/01-model.c4, cnt_gm_identity_webapi/01-model.c4, cnt_gm_identity_db/01-model.c4, cnt_gm_webapi/01-model.c4 (связи OIDC, JWKS, Bearer).
 - Спецификация элементов/связей: docs/architecture/diagram/context/specification.c4.
 - При необходимости уточнения формулировок безопасности: ADR и docs по Vault/OIDC в docs/architecture/ (если есть в репозитории).
 
 ### Правила LikeC4 для dynamic view
 - Документация: https://likec4.dev/dsl/views/dynamic
-- В шагах используй только элементы, которые **уже объявлены в model** (например `greenhouse_system.cnt_gm_web`, `greenhouse_system.cnt_gm_identity_web`, `greenhouse_system.cnt_gm_identity_webapi`, `greenhouse_system.cnt_gm_identity_db`, `greenhouse_system.cnt_gm_webapi` — согласуй с существующими model.c4). Не придумывай новые контейнеры без явного запроса.
+- В шагах используй только элементы, которые **уже объявлены в model** (например `greenhouse_system.cnt_gm_web`, `greenhouse_system.cnt_gm_identity_web`, `greenhouse_system.cnt_gm_identity_webapi`, `greenhouse_system.cnt_gm_identity_db`, `greenhouse_system.cnt_gm_webapi` — согласуй с существующими 01-model.c4). Не придумывай новые контейнеры без явного запроса.
 - Имя представления: латиница и snake_case, например `user_authentication_oidc` или `dynamic_security_oidc_login`.
 - Для dynamic view укажи `title` и при необходимости `description` на русском.
 - Опционально: `variant sequence` для классической диаграммы последовательности; учти, что для sequence может понадобиться явный порядок участников (`include` в представлении — см. доку LikeC4). Если не уверен — используй вариант по умолчанию (diagram).
@@ -54,8 +54,8 @@
 
 ## Как использовать
 
-1. Скопируйте блок внутри ```text … ``` в чат с ИИ или приложите перечисленные `model.c4` как контекст.
-2. Сохраните результат в файл в каталоге `docs/architecture/diagram/security/`, например `oidc-user-authentication.c4`. Для разрешения ссылок на акторы и контейнеры настройте в этом каталоге `likec4.config.json` с `include.paths` на `../context` и `../containers` (и при необходимости `exclude` для `**/views.c4`, чтобы не дублировать статические представления), либо включите новый файл в уже существующий workspace диаграмм проекта.
+1. Скопируйте блок внутри ```text … ``` в чат с ИИ или приложите перечисленные `01-model.c4` как контекст.
+2. Сохраните результат в файл в каталоге `docs/architecture/diagram/security/`, например `60-oidc-user-authentication.c4`. Для разрешения ссылок на акторы и контейнеры настройте в этом каталоге `likec4.config.json` с `include.paths` на `../context` и `../containers` (и при необходимости `exclude` для `**/views.c4`, чтобы не дублировать статические представления), либо включите новый файл в уже существующий workspace диаграмм проекта.
 3. Проверьте визуализацию в LikeC4 CLI или IDE; при ошибках «элемент не найден» — проверьте квалификаторы (`greenhouse_system.*`) и наличие акторов в контекстной модели.
 
 ## Ссылки

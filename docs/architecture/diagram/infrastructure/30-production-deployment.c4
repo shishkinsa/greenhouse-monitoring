@@ -1,16 +1,16 @@
-// Связанные документы: docs/architecture/calc_architecture.md (RPS/CCU, HA, балансировка)
+// Связанные документы: docs/architecture/01-calc-architecture.md (RPS/CCU, HA, балансировка)
 // Логическая модель: docs/architecture/diagram/containers/
 
 deployment {
     environment production 'Production' {
         description """
-        Целевое развёртывание production по docs/architecture/calc_architecture.md и NFR-03 (отказоустойчивость).
+        Целевое развёртывание production по docs/architecture/01-calc-architecture.md и NFR-03 (отказоустойчивость).
 
         Сводка реплик: веб+API `2`, Identity `2`, SavingService `2`, go2rtc live/history по `2`, MinIO distributed `4`, Vault Raft `3`, Redis `1+1`, Sentinel `3`, RabbitMQ `2`, PostgreSQL `1+1`, ClickHouse data `2`, ClickHouse Keeper `3` (отдельные узлы кворума).
 
         Классы трафика (чтобы не смешивать с пользовательским L7): (1) Браузер → `edge` 443/TLS — SPA, API, OIDC, WSS к go2rtc. (2) Контроллеры теплиц → `edge_mqtt` 8883/TCP (TLS/MQTT) → RabbitMQ — не через HTTP Ingress. (3) IP-камеры → поды go2rtc по RTSP/RTP из сегмента VLAN камер (см. узлы WebRTC); пользовательский периметр сюда не относится.
 
-        Внутренние порты (поды → сервисы, деталь — в `docs/architecture/diagram/containers/*/model.c4`): Redis 6379, PostgreSQL 5432, RabbitMQ AMQP 5672, ClickHouse HTTP 8123 (запись SavingService) / 8443 (GraphQL WebAPI), Vault HTTPS (часто 8200 в кластере), MinIO S3 HTTPS (типично 9000 или 443 за Service). Между ВМ: репликация PG 5432, Keeper 9181, координация CH — ансамбль Keeper.
+        Внутренние порты (поды → сервисы, деталь — в `docs/architecture/diagram/containers/*/01-model.c4`): Redis 6379, PostgreSQL 5432, RabbitMQ AMQP 5672, ClickHouse HTTP 8123 (запись SavingService) / 8443 (GraphQL WebAPI), Vault HTTPS (часто 8200 в кластере), MinIO S3 HTTPS (типично 9000 или 443 за Service). Между ВМ: репликация PG 5432, Keeper 9181, координация CH — ансамбль Keeper.
         """
 
         load_balancer edge 'Периметр (reverse proxy / L7)' {

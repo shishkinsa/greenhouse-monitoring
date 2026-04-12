@@ -15,8 +15,8 @@
 | Тип | Ссылка |
 |-----|--------|
 | **Требования** | [NFR по масштабируемости](../../requirements/non-functional/04-scalability.md), [доступности](../../requirements/non-functional/03-availability.md), [аутентификации](../../requirements/functional/03-authentication-and-access.md) |
-| **Диаграммы** | Контейнеры [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/model.c4), [CNT_GM_Identity_WebAPI](../diagram/containers/cnt_gm_identity_webapi/model.c4) |
-| **Документация** | [Технологический стек](../../ai/tech-stack.md), [Расчёт архитектуры](../calc_architecture.md) |
+| **Диаграммы** | Контейнеры [CNT_GM_WebAPI](../diagram/containers/cnt_gm_webapi/01-model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/01-model.c4), [CNT_GM_Identity_WebAPI](../diagram/containers/cnt_gm_identity_webapi/01-model.c4) |
+| **Документация** | [Технологический стек](../../ai/tech-stack.md), [Расчёт архитектуры](../01-calc-architecture.md) |
 
 ---
 

@@ -25,14 +25,31 @@
 docs/architecture/diagram/
 ├── README.md              # Этот файл — описание раздела и правил
 ├── context/               # 01–09: контекст системы, внешние акторы и системы
-├── containers/            # 01–09: контейнеры (сервисы, БД, очереди)
+│   ├── 01-model.c4
+│   ├── 02-views.c4
+│   └── 03-specification.c4
+├── containers/            # 01–09: контейнеры (сервисы, БД, очереди); в каждом cnt_* — 01-model.c4
+│   ├── 01-views.c4
+│   └── cnt_gm_web/
+│       ├── 01-model.c4
+│       └── 02-views.c4
 ├── components/            # 10–19: компоненты внутри контейнеров
 ├── data/                  # 20–29: схемы данных, ER, потоки данных
+│   └── cnt_gm_db/
+│       ├── 20-metadata-database-structure.md
+│       └── 21-erd-cnt-gm-db.drawio
 ├── infrastructure/        # 30–39: серверы, сети, облако, деплой
+│   ├── 30-production-deployment.c4
+│   ├── 31-views.c4
+│   └── 32-deployment-diagram-prompt-example.md
 ├── behavior/              # 40–49: последовательности, состояния, сценарии
+│   └── 40-dynamic-employee-live-monitoring.c4
 ├── business/              # 50–59: бизнес-процессы и потоки работ
 ├── security/              # 60–69: угрозы, аутентификация, авторизация
+│   ├── 60-oidc-user-authentication.c4
+│   └── 61-threat-model.md
 ├── integration/           # 70–79: интеграции с внешними системами
+│   └── 70-edge-devices.md
 └── legacy/                # 80–99: устаревшие или временные диаграммы
 ```
 
@@ -60,9 +77,12 @@ docs/architecture/diagram/
 ### Примеры
 | Файл | Описание |
 |------|----------|
-| `01-system-context.c4` | Контекстная диаграмма |
-| `02-payment-flow.drawio` | Поток платежей |
-| `03-order-state.puml` | Состояния заказа |
+| `01-model.c4` | Контекстная или контейнерная модель в каталоге |
+| `20-metadata-database-structure.md` | Описание схемы БД метаданных (каталог `data/`) |
+| `30-production-deployment.c4` | Модель развёртывания production |
+| `60-oidc-user-authentication.c4` | Поток OIDC (каталог `security/`) |
+
+Файлы `README.md` в подкаталогах — исключение: имя без числового префикса.
 
 ### Номера по категориям
 | Диапазон | Категория |

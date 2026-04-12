@@ -12,14 +12,14 @@
 Цель: сгенерировать два блока `views { ... }` с **dynamic view** — отдельно для сценария **сотрудника** и **инженера**, без изменения смысла уже принятой контейнерной архитектуры.
 
 ### Источники правды (прочитай и опирайся на них)
-- Акторы и система: docs/architecture/diagram/context/model.c4 (employee, engineer, greenhouse_system).
-- Контейнеры и связи: docs/architecture/diagram/containers/**/model.c4 (CNT_GM_Web, CNT_GM_WebAPI, CNT_GM_Identity_Web, Identity WebAPI, go2rtc, брокер, БД — по сценарию).
+- Акторы и система: docs/architecture/diagram/context/01-model.c4 (employee, engineer, greenhouse_system).
+- Контейнеры и связи: docs/architecture/diagram/containers/**/01-model.c4 (CNT_GM_Web, CNT_GM_WebAPI, CNT_GM_Identity_Web, Identity WebAPI, go2rtc, брокер, БД — по сценарию).
 - Спецификация элементов/связей: docs/architecture/diagram/context/specification.c4.
 - Поведение в требованиях: docs/requirements/business/02-user-stories.md (US-01 сотрудник, US-02 инженер), docs/requirements/functional/01-live-video-monitoring.md (FR-01), docs/requirements/functional/02-event-search-and-archive.md (FR-02).
 
 ### Правила LikeC4 для dynamic view
 - Документация: https://likec4.dev/dsl/views/dynamic
-- В шагах используй только элементы, которые **уже объявлены в model** (например `greenhouse_system.cnt_gm_web` или как у вас принято в проекте — согласуй с существующими model.c4). Не придумывай новые контейнеры без явного запроса.
+- В шагах используй только элементы, которые **уже объявлены в model** (например `greenhouse_system.cnt_gm_web` или как у вас принято в проекте — согласуй с существующими 01-model.c4). Не придумывай новые контейнеры без явного запроса.
 - Имена представлений: латиница и snake_case, например `dynamic_employee_live_monitoring`, `dynamic_engineer_event_search`.
 - Для каждого dynamic view укажи `title` и при необходимости `description` на русском.
 - Опционально: `variant sequence` если нужна классическая диаграмма последовательности; иначе оставь вариант по умолчанию (diagram).
@@ -48,7 +48,7 @@
 ## Как использовать
 
 1. Скопируйте блок внутри ```text … ``` в чат с ИИ или приложите файлы контекста/контейнеров как контекст.
-2. Сохраните результат в новый файл, например `41-employee-engineer-dynamic-views.c4`, и подключите его к сборке LikeC4 вместе с существующими `model.c4` и `specification.c4`.
+2. Сохраните результат в новый файл, например `41-employee-engineer-dynamic-views.c4`, и подключите его к сборке LikeC4 вместе с существующими `01-model.c4` и `specification.c4`.
 3. Проверьте визуализацию в LikeC4 CLI или IDE; при ошибках «элемент не найден» — расширьте `model`, не меняя границы контейнеров без ADR.
 
 ## Ссылки

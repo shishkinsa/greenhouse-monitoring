@@ -19,7 +19,7 @@
         "before_any_task": [
             "Определи слой: frontend / backend / архитектура / инфраструктура.",
             "Учти docs/ai/project-context.md и docs/ai/tech-stack.md.",
-            "Проверь docs/requirements/ и docs/architecture/calc_architecture.md при нагрузке и границах.",
+            "Проверь docs/requirements/ и docs/architecture/01-calc-architecture.md при нагрузке и границах.",
             "Сверься с docs/architecture/adr/ и LikeC4 в docs/architecture/diagram/."
         ],
         "change_order": [
@@ -84,7 +84,7 @@
                 "docs/standards/c-charp-naming-conventions.md",
                 "docs/standards/coding-standards.md",
                 "docs/architecture/adr/0001-dotnet-aspnet-core-backend.md",
-                "docs/architecture/calc_architecture.md",
+                "docs/architecture/01-calc-architecture.md",
                 "docs/architecture/diagram/containers/"
             ],
             "validation": {
@@ -121,7 +121,7 @@
             "docs_to_check": [
                 "docs/architecture/adr/template.md",
                 "docs/requirements/",
-                "docs/architecture/calc_architecture.md"
+                "docs/architecture/01-calc-architecture.md"
             ],
             "validation": {
                 "template": "Шаблон: docs/architecture/adr/template.md",
@@ -158,7 +158,7 @@
             "instructions": "Проверка архитектурных документов и диаграмм LikeC4; не противоречить ADR 0001–0007 без нового ADR.",
             "docs_to_load": [
                 "docs/ai/project-context.md",
-                "docs/architecture/calc_architecture.md",
+                "docs/architecture/01-calc-architecture.md",
                 "docs/requirements/non-functional/*.md",
                 "docs/architecture/diagram/context/*.c4",
                 "docs/architecture/diagram/containers/**/*.c4"
@@ -185,7 +185,7 @@
             "instructions": "Анализ требований; изменения — в порядке: требования → архитектура → код.",
             "docs_to_load": [
                 "docs/requirements/template.md",
-                "docs/architecture/calc_architecture.md"
+                "docs/architecture/01-calc-architecture.md"
             ],
             "validation": {
                 "user_stories": "Формат сценариев по docs/requirements/business/02-user-stories.md",

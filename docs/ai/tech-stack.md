@@ -6,7 +6,7 @@
 
 ## Пояснение по выбору технологий (сводка)
 
-Ниже — сжатое обоснование в терминах архитектуры и расчётов нагрузки ([calc_architecture.md](../architecture/calc_architecture.md)); в таблицах — колонка «Почему выбрана» с отсылками к ADR, где они есть.
+Ниже — сжатое обоснование в терминах архитектуры и расчётов нагрузки ([01-calc-architecture.md](../architecture/01-calc-architecture.md)); в таблицах — колонка «Почему выбрана» с отсылками к ADR, где они есть.
 
 - **.NET / ASP.NET Core и OpenIddict** — единый серверный стек для API, ingestion и Identity; OIDC согласован с клиентом ([ADR-0001](../architecture/adr/0001-dotnet-aspnet-core-backend.md)).
 - **React и TypeScript** — типизированный SPA для мониторинга и интеграции с GraphQL/WebSocket; React 18.2.0 зафиксирован в метаданных Web ([ADR-0002](../architecture/adr/0002-react-typescript-frontend.md)).
@@ -38,7 +38,7 @@
 | HTTPS, WebSocket, GraphQL | Клиент ↔ Web API; Bearer access token | Единая точка API для UI; идентификаторы сущностей в REST — **UUID** ([gm_openapi.yaml](../architecture/openapi/components/gm_openapi.yaml)); GraphQL для запросов к телеметрии; WebSocket для живых данных — по моделям связей `CNT_GM_Web` ↔ `CNT_GM_WebAPI`. |
 | OpenID Connect | Аутентификация Web-приложения с Identity | Стандарт для браузерных SPA и выдачи access token; согласован с OpenIddict на сервере. [ADR-0001](../architecture/adr/0001-dotnet-aspnet-core-backend.md), [ADR-0002](../architecture/adr/0002-react-typescript-frontend.md) |
 | HTTPS, OIDC metadata, JWKS | Web API ↔ Identity Web API | Проверка access token без общей сессии; stateless API. [ADR-0001](../architecture/adr/0001-dotnet-aspnet-core-backend.md) |
-| TLS/MQTT | Контроллеры теплицы → брокер | Протокол IoT по требованиям и [calc_architecture.md](../architecture/calc_architecture.md); вход в единый брокер. [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |
+| TLS/MQTT | Контроллеры теплицы → брокер | Протокол IoT по требованиям и [01-calc-architecture.md](../architecture/01-calc-architecture.md); вход в единый брокер. [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |
 | AMQP (5672/TCP via TLS) | `CNT_GM_SavingService` → брокер | Внутренние потребители на AMQP без второго брокера рядом с MQTT. [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |
 | HTTPS, Vault API | Сервисы → секреты | Централизованная выдача секретов и аудит вместо разрозненных конфигов. [ADR-0007](../architecture/adr/0007-hashicorp-vault-secrets.md) |
 | 6379/TCP/RESP via TLS | `CNT_GM_WebAPI`, `CNT_GM_SavingService` ↔ `CNT_GM_Redis_DB` | Кэш онлайн-показаний и сессии stateless API; отказоустойчивость — primary/replica и Sentinel ([ADR-0008](../architecture/adr/0008-redis-sentinel-cache-sessions.md)). |
@@ -47,14 +47,14 @@
 
 | Технология | Назначение | Почему выбрана |
 | --- | --- | --- |
-| RabbitMQ с MQTT-плагином | Внешний MQTT для устройств; внутренние подписчики по AMQP | Один продукт на MQTT-периметре и AMQP для .NET-сервисов; оценка ~1000 MQTT-сессий и HA из [calc_architecture.md](../architecture/calc_architecture.md). [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |
+| RabbitMQ с MQTT-плагином | Внешний MQTT для устройств; внутренние подписчики по AMQP | Один продукт на MQTT-периметре и AMQP для .NET-сервисов; оценка ~1000 MQTT-сессий и HA из [01-calc-architecture.md](../architecture/01-calc-architecture.md). [ADR-0005](../architecture/adr/0005-rabbitmq-mqtt-broker.md) |
 
 ## Данные и кэш
 
 | Технология | Назначение | Почему выбрана |
 | --- | --- | --- |
 | PostgreSQL | Метаданные и справочники (`CNT_GM_DB`); Identity (`CNT_GM_Identity_DB`) | ACID, связи, долговременные справочники; отдельно от телеметрии; одна семья СУБД с Identity. [ADR-0003](../architecture/adr/0003-use-postgres.md) |
-| ClickHouse | Телеметрия и аналитика датчиков (`CNT_GM_Timeseries_DB`); порты: 8123 (запись), 8443 (API из Web API по модели) | Колоночное хранение временных рядов и запросы для поиска событий (NFR-02); объёмы в [calc_architecture.md](../architecture/calc_architecture.md). [ADR-0004](../architecture/adr/0004-clickhouse-telemetry.md) |
+| ClickHouse | Телеметрия и аналитика датчиков (`CNT_GM_Timeseries_DB`); порты: 8123 (запись), 8443 (API из Web API по модели) | Колоночное хранение временных рядов и запросы для поиска событий (NFR-02); объёмы в [01-calc-architecture.md](../architecture/01-calc-architecture.md). [ADR-0004](../architecture/adr/0004-clickhouse-telemetry.md) |
 | Redis + Redis Sentinel | Кэш последних показаний, сессии (`CNT_GM_Redis_DB`) | Низкая задержка для онлайн-показаний и сессий stateless Web API; реплика и Sentinel для failover ([ADR-0008](../architecture/adr/0008-redis-sentinel-cache-sessions.md)). |
 
 ## Видео
@@ -64,7 +64,7 @@
 | go2rtc | Живое и архивное видео (`CNT_GM_WebRTCServer_Only`, `CNT_GM_WebRTCServer_History`) | Готовый слой RTSP → WebRTC/MSE для браузера; разделение live и history в C4 (отдельный ADR не оформлен). |
 | RTSP (554/TCP), UDP RTC (5004, 5005) | Камеры → go2rtc | Типичный транспорт IP-камер; соответствует модели связей с `CNT_Video_Camera`. |
 | WebSocket, MSE | Браузер ↔ go2rtc | Доставка видео в SPA по модели `CNT_GM_Web`. [ADR-0002](../architecture/adr/0002-react-typescript-frontend.md) (клиент) |
-| MinIO (S3 API) | Архив сегментов видео (`CNT_GM_S3`) | Большие объёмы архива; S3 API для записи/чтения сегментов go2rtc; масштаб и lifecycle в [calc_architecture.md](../architecture/calc_architecture.md). [ADR-0006](../architecture/adr/0006-minio-s3-object-storage.md) |
+| MinIO (S3 API) | Архив сегментов видео (`CNT_GM_S3`) | Большие объёмы архива; S3 API для записи/чтения сегментов go2rtc; масштаб и lifecycle в [01-calc-architecture.md](../architecture/01-calc-architecture.md). [ADR-0006](../architecture/adr/0006-minio-s3-object-storage.md) |
 
 ## Инфраструктура и секреты
 

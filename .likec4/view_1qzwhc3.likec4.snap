@@ -4,7 +4,7 @@
   links: null,
   viewOf: 'greenhouse_system',
   _stage: 'layouted',
-  sourcePath: 'docs/architecture/diagram/containers/views.c4',
+  sourcePath: 'docs/architecture/diagram/containers/01-views.c4',
   description: {
     txt: 'Диаграмма контейнеров системы мониторинга теплицы',
   },

@@ -55,7 +55,7 @@ SETTINGS index_granularity = 8192;
 |------|-----|------------|
 | `measured_at` | `DateTime64(3, 'UTC')` | Время измерения (основная временная ось). |
 | `greenhouse_id` | `UUID` | Ссылка на теплицу в `CNT_GM_DB`. |
-| `sensor_id` | `UUID` | Ссылка на установленный датчик в `CNT_GM_DB`. |
+| `sensor_id` | `UUID` | Ссылка на экземпляр датчика `sensors.id` в `CNT_GM_DB`. |
 | `sensor_type_code` | `LowCardinality(String)` | Тип датчика для быстрых фильтров и группировок. |
 | `metric_code` | `LowCardinality(String)` | Код метрики (что измеряли). |
 | `value` | `Float64` | Значение измерения. |
@@ -110,7 +110,7 @@ TTL bucket_1m + INTERVAL 24 MONTH;
 |------|-----|------------|
 | `bucket_1m` | `DateTime('UTC')` | Временной бакет 1 минута. |
 | `greenhouse_id` | `UUID` | Ссылка на теплицу (`CNT_GM_DB`). |
-| `sensor_id` | `UUID` | Ссылка на датчик (`CNT_GM_DB`). |
+| `sensor_id` | `UUID` | Ссылка на экземпляр датчика `sensors.id` (`CNT_GM_DB`). |
 | `sensor_type_code` | `LowCardinality(String)` | Тип датчика. |
 | `metric_code` | `LowCardinality(String)` | Код метрики. |
 | `unit` | `LowCardinality(String)` | Единица измерения. |
@@ -163,7 +163,7 @@ TTL detected_at + INTERVAL 24 MONTH;
 | `event_type_code` | `LowCardinality(String)` | Тип события. |
 | `detected_at` | `DateTime64(3, 'UTC')` | Время фиксации события. |
 | `greenhouse_id` | `UUID` | Ссылка на теплицу (`CNT_GM_DB`). |
-| `sensor_id` | `UUID` | Ссылка на датчик (`CNT_GM_DB`). |
+| `sensor_id` | `UUID` | Ссылка на экземпляр датчика `sensors.id` (`CNT_GM_DB`). |
 | `metric_code` | `LowCardinality(String)` | Метрика события. |
 | `severity` | `LowCardinality(String)` | Критичность. |
 | `value` | `Float64` | Фактическое значение. |
@@ -229,7 +229,7 @@ LIMIT 500;
 
 ## Связанные документы
 
-- Контейнер БД: [cnt_gm_timeseries_db/model.c4](../../containers/cnt_gm_timeseries_db/model.c4)
+- Контейнер БД: [cnt_gm_timeseries_db/01-model.c4](../../containers/cnt_gm_timeseries_db/01-model.c4)
 - ADR по выбору ClickHouse: [ADR-0004](../../../adr/0004-clickhouse-telemetry.md)
 - Технологический стек: [tech-stack.md](../../../../ai/tech-stack.md)
-- Расчёт нагрузки и объёмов: [calc_architecture.md](../../../calc_architecture.md)
+- Расчёт нагрузки и объёмов: [01-calc-architecture.md](../../../01-calc-architecture.md)

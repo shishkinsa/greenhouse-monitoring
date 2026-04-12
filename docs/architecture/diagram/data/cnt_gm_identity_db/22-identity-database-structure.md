@@ -2,7 +2,7 @@
 
 ## Назначение и границы
 
-База данных **CNT_GM_Identity_DB** хранит данные подсистемы **Identity** ([модель контейнера](../../containers/cnt_gm_identity_db/model.c4)): учётные записи, аутентификацию и авторизацию (в т.ч. OAuth/OIDC через **OpenIddict**) и **глобальные роли** пользователей. **Организации** и **членство пользователя в организации** описаны в БД метаданных **`CNT_GM_DB`** ([metadata_database_structure.md](../cnt_gm_db/metadata_database_structure.md)); прикладные справочники домена (теплицы, регионы, датчики и т.д.) также в **`CNT_GM_DB`** ([ADR-0003](../../../adr/0003-use-postgres.md)).
+База данных **CNT_GM_Identity_DB** хранит данные подсистемы **Identity** ([модель контейнера](../../containers/cnt_gm_identity_db/01-model.c4)): учётные записи, аутентификацию и авторизацию (в т.ч. OAuth/OIDC через **OpenIddict**) и **глобальные роли** пользователей. **Организации** и **членство пользователя в организации** описаны в БД метаданных **`CNT_GM_DB`** ([20-metadata-database-structure.md](../cnt_gm_db/20-metadata-database-structure.md)); прикладные справочники домена (теплицы, регионы, датчики и т.д.) также в **`CNT_GM_DB`** ([ADR-0003](../../../adr/0003-use-postgres.md)).
 
 **СУБД:** PostgreSQL (как в архитектуре развёртывания и ADR).
 
@@ -277,22 +277,22 @@ PK: `credential_id`. Индексы по FK на пользователя соз
 |----------|-------------------------|------------|
 | Глобальные роли | `AspNetRoles` / `AspNetUserRoles` → `asp_net_roles`, `asp_net_user_roles` | Системные роли (сотрудник, инженер и т.д.). |
 
-Роли и права **внутри организации** (`membership_role`, списки организаций пользователя) — в **`CNT_GM_DB`**, см. [metadata_database_structure.md](../cnt_gm_db/metadata_database_structure.md).
+Роли и права **внутри организации** (`membership_role`, списки организаций пользователя) — в **`CNT_GM_DB`**, см. [20-metadata-database-structure.md](../cnt_gm_db/20-metadata-database-structure.md).
 
 ---
 
 ## 5. Безопасность и эксплуатация
 
 - Секреты клиентов OIDC и ключи подписи JWT при промышленной конфигурации частично размещаются в **Vault**; в БД не хранить открытые долгоживущие секреты без необходимости.
-- Резервное копирование и репликация — в общем контуре PostgreSQL (см. [production-deployment.c4](../../infrastructure/production-deployment.c4)).
+- Резервное копирование и репликация — в общем контуре PostgreSQL (см. [30-production-deployment.c4](../../infrastructure/30-production-deployment.c4)).
 - Изменение схемы — через миграции EF Core; после первой миграции сверьте имена и типы с разделами выше.
 
 ---
 
 ## Связанные документы
 
-- Контейнер БД: [model.c4](../../containers/cnt_gm_identity_db/model.c4)
+- Контейнер БД: [01-model.c4](../../containers/cnt_gm_identity_db/01-model.c4)
 - ADR по PostgreSQL: [ADR-0003](../../../adr/0003-use-postgres.md)
-- БД метаданных (организации, теплицы): [metadata_database_structure.md](../cnt_gm_db/metadata_database_structure.md)
+- БД метаданных (организации, теплицы): [20-metadata-database-structure.md](../cnt_gm_db/20-metadata-database-structure.md)
 - Соглашения SQL: [psql-naming-conventions.md](../../../../standards/psql-naming-conventions.md)
 - Контекст узлов: [project-context.md](../../../../ai/project-context.md)

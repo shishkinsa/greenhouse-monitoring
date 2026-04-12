@@ -16,8 +16,8 @@
 |-----|--------|
 | **Требования** | [FR-01](../../requirements/functional/01-live-video-monitoring.md), [FR-02](../../requirements/functional/02-event-search-and-archive.md), [FR-03](../../requirements/functional/03-authentication-and-access.md), [NFR-01](../../requirements/non-functional/01-latency-live-stream.md) |
 | **Связанные ADR** | [ADR-0001: .NET / ASP.NET Core](0001-dotnet-aspnet-core-backend.md) — контракты API и OIDC на стороне сервера |
-| **Диаграммы** | Контейнеры [CNT_GM_Web](../diagram/containers/cnt_gm_web/model.c4), [CNT_GM_Identity_Web](../diagram/containers/cnt_gm_identity_web/model.c4) |
-| **Документация** | [Технологический стек](../../ai/tech-stack.md), [Расчёт архитектуры](../calc_architecture.md) |
+| **Диаграммы** | Контейнеры [CNT_GM_Web](../diagram/containers/cnt_gm_web/01-model.c4), [CNT_GM_Identity_Web](../diagram/containers/cnt_gm_identity_web/01-model.c4) |
+| **Документация** | [Технологический стек](../../ai/tech-stack.md), [Расчёт архитектуры](../01-calc-architecture.md) |
 
 ---
 
@@ -25,7 +25,7 @@
 
 ### Проблема
 
-Системе нужны два браузерных SPA: основное веб-приложение ИС (`CNT_GM_Web`) и клиент подсистемы Identity (`CNT_GM_Identity_Web`). Пользователи просматривают live-видео и показания датчиков, выполняют поиск событий и работают с архивом, проходят аутентификацию через OpenID Connect. Интерфейсы опираются на **HTTPS**, **WebSocket**, **GraphQL** и потоковое видео в браузере (в т.ч. WebSocket/MSE к медиа-сервисам по модели [cnt_gm_web](../diagram/containers/cnt_gm_web/model.c4)).
+Системе нужны два браузерных SPA: основное веб-приложение ИС (`CNT_GM_Web`) и клиент подсистемы Identity (`CNT_GM_Identity_Web`). Пользователи просматривают live-видео и показания датчиков, выполняют поиск событий и работают с архивом, проходят аутентификацию через OpenID Connect. Интерфейсы опираются на **HTTPS**, **WebSocket**, **GraphQL** и потоковое видео в браузере (в т.ч. WebSocket/MSE к медиа-сервисам по модели [cnt_gm_web](../diagram/containers/cnt_gm_web/01-model.c4)).
 
 Нужно зафиксировать стек реализации клиентской части, чтобы единообразно развивать UI, типизировать контракты с backend и не плодить несовместимые фреймворки.
 
@@ -118,7 +118,7 @@ risks: ["Ошибки контрактов с backend", "сложнее рефа
 
 Принять **React** и **TypeScript** как **единый** стек для браузерных приложений в границах системы: **`CNT_GM_Web`** и **`CNT_GM_Identity_Web`**.
 
-Целевая версия React для основного приложения — **18.2.0** (как в метаданных [cnt_gm_web](../diagram/containers/cnt_gm_web/model.c4)); для Identity Web использовать ту же мажорную линию React, что и у `CNT_GM_Web`, если иное не оформлено отдельным решением.
+Целевая версия React для основного приложения — **18.2.0** (как в метаданных [cnt_gm_web](../diagram/containers/cnt_gm_web/01-model.c4)); для Identity Web использовать ту же мажорную линию React, что и у `CNT_GM_Web`, если иное не оформлено отдельным решением.
 
 Новые клиентские SPA в составе этой системы вводятся на **React + TypeScript**, если иное не оформлено отдельным ADR.
 

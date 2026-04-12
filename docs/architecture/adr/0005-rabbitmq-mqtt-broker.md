@@ -16,8 +16,8 @@
 |-----|--------|
 | **Требования** | [NFR-03](../../requirements/non-functional/03-availability.md) (доступность, в т.ч. **2 узла** брокера), [NFR-04](../../requirements/non-functional/04-scalability.md); приём MQTT от контроллеров — [бизнес-правила](../../requirements/business/03-business-rules.md) (MQTT) |
 | **Связанные ADR** | [ADR-0004: ClickHouse](0004-clickhouse-telemetry.md) — потребление телеметрии после ingestion; [ADR-0001: .NET](0001-dotnet-aspnet-core-backend.md) — `CNT_GM_SavingService` как AMQP-клиент |
-| **Диаграммы** | [CNT_GM_Broker](../diagram/containers/cnt_gm_broker/model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/model.c4), [CNT_Digital_Controller](../diagram/containers/cnt_greenhouse/cnt_digital_controller/model.c4) |
-| **Документация** | [Расчёт архитектуры](../calc_architecture.md) (раздел «Выбор брокера: RabbitMQ и MQTT», нагрузка по соединениям), [tech-stack.md](../../ai/tech-stack.md) |
+| **Диаграммы** | [CNT_GM_Broker](../diagram/containers/cnt_gm_broker/01-model.c4), [CNT_GM_SavingService](../diagram/containers/cnt_gm_savingservice/01-model.c4), [CNT_Digital_Controller](../diagram/containers/cnt_greenhouse/cnt_digital_controller/01-model.c4) |
+| **Документация** | [Расчёт архитектуры](../01-calc-architecture.md) (раздел «Выбор брокера: RabbitMQ и MQTT», нагрузка по соединениям), [tech-stack.md](../../ai/tech-stack.md) |
 
 ---
 
@@ -25,20 +25,20 @@
 
 ### Проблема
 
-Контроллеры на теплицах должны публиковать телеметрию по **MQTT** (требования к ИС и [calc_architecture.md](../calc_architecture.md)). Внутреннему сервису **`CNT_GM_SavingService`** нужно надёжно **потреблять** эти сообщения и записывать их в **ClickHouse** ([ADR-0004](0004-clickhouse-telemetry.md)), обновляя кэш в Redis. При масштабе **1000+ теплиц** оценивается порядка **1000 постоянных TCP-соединений** MQTT-клиентов к брокеру; для **доступности** ([NFR-03](../../requirements/non-functional/03-availability.md)) в расчёте заложены **два узла** брокера (не из-за дефицита пропускной способности по числу соединений на один узел RabbitMQ).
+Контроллеры на теплицах должны публиковать телеметрию по **MQTT** (требования к ИС и [01-calc-architecture.md](../01-calc-architecture.md)). Внутреннему сервису **`CNT_GM_SavingService`** нужно надёжно **потреблять** эти сообщения и записывать их в **ClickHouse** ([ADR-0004](0004-clickhouse-telemetry.md)), обновляя кэш в Redis. При масштабе **1000+ теплиц** оценивается порядка **1000 постоянных TCP-соединений** MQTT-клиентов к брокеру; для **доступности** ([NFR-03](../../requirements/non-functional/03-availability.md)) в расчёте заложены **два узла** брокера (не из-за дефицита пропускной способности по числу соединений на один узел RabbitMQ).
 
 Нужно зафиксировать продукт брокера и схему протоколов: **MQTT с периметра** и **протокол для сервисов внутри контура** без второго брокера только ради моста.
 
 ### Предпосылки
 
-- В LikeC4 для `CNT_GM_Broker` указаны **RabbitMQ (MQTT plugin)** и явное разделение: внешний **MQTT** для устройств, внутренние сервисы — **AMQP** ([model.c4](../diagram/containers/cnt_gm_broker/model.c4)).
-- `CNT_GM_SavingService` подключается к брокеру по **5672/AMQP via TLS** ([model.c4](../diagram/containers/cnt_gm_savingservice/model.c4)).
-- Контроллеры подключаются по **TLS/MQTT** к `CNT_GM_Broker` ([cnt_digital_controller](../diagram/containers/cnt_greenhouse/cnt_digital_controller/model.c4)).
+- В LikeC4 для `CNT_GM_Broker` указаны **RabbitMQ (MQTT plugin)** и явное разделение: внешний **MQTT** для устройств, внутренние сервисы — **AMQP** ([01-model.c4](../diagram/containers/cnt_gm_broker/01-model.c4)).
+- `CNT_GM_SavingService` подключается к брокеру по **5672/AMQP via TLS** ([01-model.c4](../diagram/containers/cnt_gm_savingservice/01-model.c4)).
+- Контроллеры подключаются по **TLS/MQTT** к `CNT_GM_Broker` ([cnt_digital_controller](../diagram/containers/cnt_greenhouse/cnt_digital_controller/01-model.c4)).
 
 ### Ограничения
 
 - Не вводить отдельный «чистый» MQTT-брокер и **второй** контур интеграции до **AMQP**-потребителей без веской причины (см. расчёт: отдельный мост или второй протокол усложняют эксплуатацию).
-- Сохранить совместимость с оценкой ёмкости и HA в [calc_architecture.md](../calc_architecture.md).
+- Сохранить совместимость с оценкой ёмкости и HA в [01-calc-architecture.md](../01-calc-architecture.md).
 
 ---
 
@@ -56,7 +56,7 @@
 
 **Минусы:**
 
-- Настройка и обновление **MQTT-плагина** в составе RabbitMQ; кластерные политики (кворумные очереди, зеркалирование) требуют экспертизы — детали в техническом проекте ([calc_architecture.md](../calc_architecture.md)).
+- Настройка и обновление **MQTT-плагина** в составе RabbitMQ; кластерные политики (кворумные очереди, зеркалирование) требуют экспертизы — детали в техническом проекте ([01-calc-architecture.md](../01-calc-architecture.md)).
 
 **Оценка:**
 
@@ -73,7 +73,7 @@ risks: ["Совместимость версий плагина MQTT с RabbitMQ
 
 **Плюсы:**
 
-- Референс по ёмкости MQTT в той же таблице расчёта ([calc_architecture.md](../calc_architecture.md)).
+- Референс по ёмкости MQTT в той же таблице расчёта ([01-calc-architecture.md](../01-calc-architecture.md)).
 
 **Минусы:**
 
@@ -119,7 +119,7 @@ risks: ["Полная переработка периметра устройст
 
 - контроллеры теплиц публикуют телеметрию по **MQTT** (поверх **TLS**, в духе модели связей);
 - **`CNT_GM_SavingService`** подписывается по **AMQP** (**5672/TCP via TLS**) и далее пишет в **ClickHouse** и **Redis**;
-- при необходимости **Web MQTT** уточняется в техническом проекте (как в [calc_architecture.md](../calc_architecture.md)).
+- при необходимости **Web MQTT** уточняется в техническом проекте (как в [01-calc-architecture.md](../01-calc-architecture.md)).
 
 Детали кластера (кворумные очереди, политика зеркалирования, обновления плагина) — в техническом проекте и не меняют порядки нагрузки в расчёте архитектуры.
 
@@ -129,7 +129,7 @@ risks: ["Полная переработка периметра устройст
 
 ### Положительные
 
-- Согласованность с [cnt_gm_broker/model.c4](../diagram/containers/cnt_gm_broker/model.c4) и разделом «Выбор брокера: RabbitMQ и MQTT» в [calc_architecture.md](../calc_architecture.md).
+- Согласованность с [cnt_gm_broker/01-model.c4](../diagram/containers/cnt_gm_broker/01-model.c4) и разделом «Выбор брокера: RabbitMQ и MQTT» в [01-calc-architecture.md](../01-calc-architecture.md).
 - Один контур брокера для периметра (MQTT) и внутренних сервисов (AMQP).
 
 ### Отрицательные
