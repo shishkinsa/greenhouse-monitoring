@@ -1,0 +1,57 @@
+.rootLayout {
+  min-height: 100svh;
+  min-height: 100dvh;
+  width: 100%;
+}
+
+.innerLayout {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Стили для слайдера */
+.demo-logo-vertical {
+  height: 32px;
+  margin: 16px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+}
+
+/* Стили для кнопки триггера */
+.trigger {
+  font-size: 18px;
+  margin-left: 16px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: color 0.3s;
+}
+
+.contentContainer {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 24px;
+  overflow: auto;
+}
+
+.trigger:hover {
+  color: #1890ff;
+  /* цвет Ant Design primary */
+}
+
+/* Можно добавить стили для активного пункта меню */
+.ant-menu-item-selected {
+  background-color: #e6f7ff !important;
+}
+
+/* Адаптивность для мобильных устройств (опционально) */
+@media (max-width: 768px) {
+  .trigger {
+    font-size: 16px;
+    margin-left: 12px;
+  }
+}

@@ -50,6 +50,7 @@ const WeatherTable: React.FC<WeatherTableProps> = ({ data, loading = false }) =>
       rowKey="key"
       pagination={{ pageSize: 5, showSizeChanger: true, showTotal: (total) => `Всего ${total} записей` }}
       bordered
+      scroll={{ x: 'max-content' }}
     />
   );
 };

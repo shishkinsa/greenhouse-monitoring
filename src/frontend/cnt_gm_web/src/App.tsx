@@ -1,5 +1,5 @@
-import {BrowserRouter, Routes, Route } from 'react-router-dom'
-import AppLayout from './components/AppLayout';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import AppLayout from './components/AppLayout/AppLayout';
 import WeatherPage from './pages/WatherPage';
 
 function App() {
@@ -7,6 +7,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AppLayout />}>
+          <Route index element={<Navigate to="/weather" replace />} />
           <Route path="weather" element={<WeatherPage />} />
         </Route>
       </Routes>
