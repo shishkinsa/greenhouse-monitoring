@@ -1,0 +1,52 @@
+---
+description: Проверять и дополнять TSDoc во frontend (cnt_gm_web, FSD)
+globs:
+  - src/frontend/cnt_gm_web/src/**/*.ts
+  - src/frontend/cnt_gm_web/src/**/*.tsx
+alwaysApply: false
+---
+
+# Документирование frontend (cnt_gm_web)
+
+При изменении или добавлении кода в `src/frontend/cnt_gm_web/src` **проверяй и при необходимости дополняй** комментарии TSDoc/JSDoc по канону проекта:
+
+- Полный текст правил: [docs/standards/coding-standards.md](docs/standards/coding-standards.md) — подраздел **«Документирование frontend (React, FSD)»**.
+- Структура слоёв: [docs/architecture/specs/frontend/12-frontend-app-architecture.md](docs/architecture/specs/frontend/12-frontend-app-architecture.md), кратко — [src/frontend/cnt_gm_web/src/README.md](src/frontend/cnt_gm_web/src/README.md).
+
+## Обязательно документировать (русский язык описаний)
+
+| Слой / место | Что |
+|----------------|-----|
+| `shared/api` | каждая экспортируемая функция (`@param`, `@returns`, `@throws` при ошибках) |
+| `entities/*/api` | запросы к backend |
+| `features/*/model` (хуки) | назначение, ограничения (например antd `App`), `@returns` — поля объекта |
+| `pages/*/ui`, `widgets/*` | экспортируемые компоненты (роль на экране; неочевидные пропсы — `@param`) |
+| `entities/*/model` | доменные типы (кратко зачем) |
+| `app/*`, `shared/config` | роль модуля в сборке / теме |
+
+## Не раздувать
+
+Внутренние функции без `export`; очевидное из имён и типов TypeScript; в `index.ts` достаточно одной строки `/** … */` про публичный API слайса.
+
+## После правок
+
+Если добавлен или изменён **публичный** API (новый `export`, новые пропсы, новый async-метод) — убедись, что TSDoc обновлён. Для `async` укажи `@throws`, где уместно.
+
+## Примеры формы
+
+```ts
+/**
+ * Краткое назначение на русском.
+ *
+ * @param url — …
+ * @returns …
+ * @throws {Error} …
+ */
+```
+
+```tsx
+/**
+ * Страница маршрута `…`: что показывает.
+ */
+export function SomePage() { … }
+```

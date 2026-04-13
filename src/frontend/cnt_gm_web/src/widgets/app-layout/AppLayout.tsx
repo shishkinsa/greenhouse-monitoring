@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import {
-  TableOutlined,
-} from '@ant-design/icons';
+import { TableOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
+import { useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import styles from './AppLayout.module.css';
 
@@ -12,7 +10,7 @@ const { Header, Content, Footer, Sider } = Layout;
 type MenuItem = Required<MenuProps>['items'][number];
 
 function getItem(
-  label: React.ReactNode,
+  label: ReactNode,
   key: React.Key,
   icon?: React.ReactNode,
   children?: MenuItem[],
@@ -29,7 +27,10 @@ const items: MenuItem[] = [
   getItem(<Link to="/weather">Прогноз погоды</Link>, '/weather', <TableOutlined />),
 ];
 
-const App: React.FC = () => {
+/**
+ * Оболочка приложения: боковое меню, шапка, область для вложенных маршрутов (`Outlet`).
+ */
+export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const { pathname } = useLocation();
   const {
@@ -50,7 +51,7 @@ const App: React.FC = () => {
         collapsedWidth={0}
         zeroWidthTriggerStyle={{ top: 16 }}
       >
-        <div className="demo-logo-vertical" />
+        <div className={styles.demoLogoVertical} />
         <Menu theme="dark" mode="inline" items={items} selectedKeys={menuSelectedKeys} />
       </Sider>
       <Layout className={styles.innerLayout}>
@@ -77,6 +78,4 @@ const App: React.FC = () => {
       </Layout>
     </Layout>
   );
-};
-
-export default App;
+}

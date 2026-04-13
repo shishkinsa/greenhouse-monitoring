@@ -1,6 +1,6 @@
 # Соглашения по именованию React
 
-Правила задаются данным документом. Базовые соглашения TypeScript — [ts-naming-conventions.md](ts-naming-conventions.md). Общие стандарты проекта — [src/.editorconfig](src/.editorconfig).
+Правила задаются данным документом. Базовые соглашения TypeScript — [ts-naming-conventions.md](ts-naming-conventions.md). Общие стандарты проекта — [src/.editorconfig](src/.editorconfig). Документирование кода frontend (TSDoc, слои FSD) — подраздел **«Документирование frontend (React, FSD)»** в [coding-standards.md](coding-standards.md) (секция «Документирование»).
 
 | Сущность | Стиль | Пример |
 |----------|--------|--------|

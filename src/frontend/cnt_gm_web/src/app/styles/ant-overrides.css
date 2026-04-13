@@ -1,0 +1,14 @@
+/* Глобальные правки Ant (селекторы вне CSS Modules) */
+/*
+ * React Router Link в label тёмного меню: без этого — браузерный цвет ссылки.
+ * currentColor следует цвету пункта меню (в т.ч. при hover/active от токенов Menu).
+ * Не задавать a:hover { color: inherit } — ломает смену цвета при наведении.
+ */
+.ant-menu-dark .ant-menu-item .ant-menu-title-content a {
+  color: currentColor;
+  text-decoration: none;
+}
+
+.ant-menu-dark .ant-menu-item .ant-menu-title-content a:visited {
+  color: currentColor;
+}

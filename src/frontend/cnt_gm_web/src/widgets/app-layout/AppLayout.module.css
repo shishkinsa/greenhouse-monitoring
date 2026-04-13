@@ -12,7 +12,6 @@
   flex: 1;
 }
 
-/* Стили для слайдера */
 .demo-logo-vertical {
   height: 32px;
   margin: 16px;
@@ -20,7 +19,6 @@
   border-radius: 6px;
 }
 
-/* Стили для кнопки триггера */
 .trigger {
   font-size: 18px;
   margin-left: 16px;
@@ -40,15 +38,8 @@
 
 .trigger:hover {
   color: #1890ff;
-  /* цвет Ant Design primary */
 }
 
-/* Можно добавить стили для активного пункта меню */
-.ant-menu-item-selected {
-  background-color: #e6f7ff !important;
-}
-
-/* Адаптивность для мобильных устройств (опционально) */
 @media (max-width: 768px) {
   .trigger {
     font-size: 16px;

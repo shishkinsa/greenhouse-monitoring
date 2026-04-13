@@ -104,11 +104,15 @@
                 "docs/ai/project-context.md",
                 "docs/standards/react-naming-conventions.md",
                 "docs/standards/ts-naming-conventions.md",
+                "docs/standards/coding-standards.md",
+                "docs/architecture/specs/frontend/12-frontend-app-architecture.md",
+                "src/frontend/cnt_gm_web/src/README.md",
                 "docs/architecture/adr/0002-react-typescript-frontend.md",
                 "docs/architecture/diagram/containers/cnt_gm_web/"
             ],
             "validation": {
-                "naming": "docs/standards/react-naming-conventions.md и ts-naming-conventions.md"
+                "naming": "docs/standards/react-naming-conventions.md и ts-naming-conventions.md",
+                "frontend_tsdoc": "Для src/frontend/cnt_gm_web: подраздел «Документирование frontend (React, FSD)» в coding-standards.md; контекстное правило Cursor — .cursor/rules/frontend-tsdoc.mdc"
             }
         },
         {
