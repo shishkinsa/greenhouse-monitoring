@@ -1,6 +1,7 @@
 import { AppLayout } from '@/widgets/app-layout';
-import { WeatherPage } from '@/pages/weather';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HomePage } from '@/pages/home';
+import { WeatherPage } from '@/pages/weather';
 
 /**
  * Корневое дерево маршрутов SPA: layout и вложенные страницы.
@@ -10,7 +11,7 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AppLayout />}>
-          <Route index element={<Navigate to="/weather" replace />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="weather" element={<WeatherPage />} />
         </Route>
       </Routes>

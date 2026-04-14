@@ -1,4 +1,4 @@
-import { TableOutlined } from '@ant-design/icons';
+import { TableOutlined, HomeOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
 import { useState, type ReactNode } from 'react';
@@ -24,6 +24,7 @@ function getItem(
 }
 
 const items: MenuItem[] = [
+  getItem(<Link to="/home">Главная</Link>, '/home', <HomeOutlined />),
   getItem(<Link to="/weather">Прогноз погоды</Link>, '/weather', <TableOutlined />),
 ];
 
