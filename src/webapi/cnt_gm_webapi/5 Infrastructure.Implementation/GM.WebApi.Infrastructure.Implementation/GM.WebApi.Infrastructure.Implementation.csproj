@@ -1,0 +1,6 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\0 Utils\GM.WebApi.Utils\GM.WebApi.Utils.csproj" />
+    <ProjectReference Include="..\..\2 Infrastructure.Interfaces\GM.WebApi.Infrastructure.Interfaces\GM.WebApi.Infrastructure.Interfaces.csproj" />
+  </ItemGroup>
+</Project>

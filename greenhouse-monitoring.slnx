@@ -1,0 +1,32 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="src/.editorconfig" />
+    <File Path="src/Directory.Build.props" />
+    <File Path="src/Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/webapi/" />
+  <Folder Name="/src/webapi/cnt_gm_webapi/" />
+  <Folder Name="/src/webapi/cnt_gm_webapi/0 Utils/">
+    <Project Path="src/webapi/cnt_gm_webapi/0 Utils/GM.WebApi.Utils/GM.WebApi.Utils.csproj" />
+  </Folder>
+  <Folder Name="/src/webapi/cnt_gm_webapi/1 Entities/">
+    <Project Path="src/webapi/cnt_gm_webapi/1 Entities/GM.WebApi.Entities/GM.WebApi.Entities.csproj" />
+  </Folder>
+  <Folder Name="/src/webapi/cnt_gm_webapi/2 Infrastructure.Interfaces/">
+    <Project Path="src/webapi/cnt_gm_webapi/2 Infrastructure.Interfaces/GM.WebApi.Infrastructure.Interfaces/GM.WebApi.Infrastructure.Interfaces.csproj" />
+  </Folder>
+  <Folder Name="/src/webapi/cnt_gm_webapi/3 UseCases/">
+    <Project Path="src/webapi/cnt_gm_webapi/3 UseCases/GM.WebApi.UseCases/GM.WebApi.UseCases.csproj" />
+  </Folder>
+  <Folder Name="/src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/">
+    <Project Path="src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/GM.WebApi.DataAccess.Postgres/GM.WebApi.DataAccess.Postgres.csproj" />
+    <Project Path="src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/GM.WebApi.Infrastructure.Implementation/GM.WebApi.Infrastructure.Implementation.csproj" />
+  </Folder>
+  <Folder Name="/src/webapi/cnt_gm_webapi/6 WebApp/">
+    <Project Path="src/webapi/cnt_gm_webapi/6 WebApp/GM.WebApi.WebApp.csproj" />
+  </Folder>
+  <Folder Name="/src/webapi/cnt_gm_webapi/7 Tests/">
+    <Project Path="src/webapi/cnt_gm_webapi/7 Tests/GM.WebApi.Tests/GM.WebApi.Tests.csproj" />
+  </Folder>
+</Solution>
