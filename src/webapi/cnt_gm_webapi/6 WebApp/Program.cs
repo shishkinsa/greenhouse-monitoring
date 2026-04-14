@@ -1,3 +1,5 @@
+using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeather;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -6,7 +8,8 @@ builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddRequestum(cfg =>
 {
-    cfg.RegisterHandlers(typeof(Program).Assembly);
+    cfg.RegisterHandlers(typeof(GetWeatherForecastQuery).Assembly);
+    cfg.RegisterMiddlewares(typeof(Program).Assembly);
 });
 
 var app = builder.Build();

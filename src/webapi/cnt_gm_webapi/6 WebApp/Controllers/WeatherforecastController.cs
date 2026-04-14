@@ -1,6 +1,5 @@
-using System.Collections.Immutable;
 
-using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetOrders;
+using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeather;
 using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeatherForecast.Responses;
 
 using Microsoft.AspNetCore.Mvc;
@@ -22,9 +21,7 @@ public class WeatherforecastController: ControllerBase
     public async Task<ActionResult<Array>> GetWeather()
     {
 
-        var query = new GetWeatherForecastQuery();
-
-        var result = await _requestum.HandleAsync<GetWeatherForecastQuery, WeatherForecastResponse>(query);
+        var result = await _requestum.HandleAsync<GetWeatherForecastQuery, WeatherForecastResponse>(new GetWeatherForecastQuery { Id = 1 });
 
         return Ok(result);
     }

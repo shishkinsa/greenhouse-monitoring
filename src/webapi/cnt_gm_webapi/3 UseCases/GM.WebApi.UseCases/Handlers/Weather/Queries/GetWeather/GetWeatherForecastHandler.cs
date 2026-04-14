@@ -1,10 +1,11 @@
-using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetOrders;
+
+using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeather;
 using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeatherForecast.Dto;
 using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeatherForecast.Responses;
 
 using Requestum.Contract;
 
-namespace GM.WebApi.UseCases.Handlers.Orders.Queries.GetOrders;
+namespace GM.WebApi.UseCases.Handlers.Orders.Queries.GetWeather;
 
 public class GetWeatherForecastHandler: IQueryHandler<GetWeatherForecastQuery, WeatherForecastResponse>
 {
