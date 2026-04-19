@@ -2,11 +2,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\3 UseCases\GM.WebApi.UseCases\GM.WebApi.UseCases.csproj" />
+    <ProjectReference Include="..\5 Infrastructure.Implementation\GM.WebApi.DataAccess.Postgres\GM.WebApi.DataAccess.Postgres.csproj" />
   </ItemGroup>
 
 </Project>
