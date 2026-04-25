@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\3 UseCases\GM.WebApi.UseCases\GM.WebApi.UseCases.csproj" />
     <ProjectReference Include="..\5 Infrastructure.Implementation\GM.WebApi.DataAccess.Postgres\GM.WebApi.DataAccess.Postgres.csproj" />
+    <ProjectReference Include="..\..\..\lib\GM.Shared.Observability\GM.Shared.Observability.csproj" />
   </ItemGroup>
 
 </Project>

@@ -23,6 +23,6 @@ public class WeatherforecastController: ControllerBase
 
         var result = await _requestum.HandleAsync<GetWeatherForecastQuery, WeatherForecastResponse>(new GetWeatherForecastQuery { Id = 1 });
 
-        return Ok(result);
+        return Ok(result.WeatherForecast);
     }
 }

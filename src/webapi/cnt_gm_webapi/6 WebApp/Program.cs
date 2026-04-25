@@ -1,8 +1,11 @@
 using GM.WebApi.DataAccess.Postgres.Data;
 using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeather;
+using GM.Shared.Observability.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+var serviceName = "GM.WebApi.WebApp";
+var serviceVersion = typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0";
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -15,6 +18,11 @@ builder.Services.AddRequestum(cfg =>
     cfg.RegisterHandlers(typeof(GetWeatherForecastQuery).Assembly);
     cfg.RegisterMiddlewares(typeof(Program).Assembly);
 });
+builder.Services.AddGmObservability(
+    builder.Logging,
+    builder.Configuration,
+    serviceName,
+    serviceVersion);
 
 var app = builder.Build();
 

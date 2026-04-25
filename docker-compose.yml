@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./src
+      dockerfile: ./webapi/cnt_gm_webapi/6 WebApp/Dockerfile
+    container_name: gm-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=host.docker.internal;Port=5432;Database=cnt_gm_db;Username=cnt_gm_db_user;Password=ChangeMe_StrongPassword_123!
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+    ports:
+      - "5025:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ./src/frontend/cnt_gm_web
+      dockerfile: Dockerfile
+    container_name: gm-frontend
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8080
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+networks:
+  default:
+    name: gm_app_network
