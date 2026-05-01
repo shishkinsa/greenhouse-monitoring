@@ -24,6 +24,12 @@ security:
 tags:
   - name: Common
     description: Общие операции (метаданные, списки)
+  - name: ReferenceData
+    description: CRUD мастер-справочников (regions, sensor_types)
+  - name: CatalogAdmin
+    description: CRUD операционных справочников (organizations, locations, greenhouses, sensors, controllers, cameras)
+  - name: Topology
+    description: CRUD связей и установок с периодами действия (sdate/edate)
   - name: DigitalController
     description: Операции по данным цифровых датчиков и аналитике
   - name: VideoCamera
@@ -391,6 +397,480 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /api/v1/regions:
+    get:
+      operationId: listRegions
+      summary: Список регионов
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница регионов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedRegions"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createRegion
+      summary: Создать регион
+      tags: [ReferenceData]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegionCreateRequest"
+      responses:
+        "201":
+          description: Регион создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/regions/{id}:
+    get:
+      operationId: getRegionById
+      summary: Получить регион
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/RegionId"
+      responses:
+        "200":
+          description: Регион
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchRegion
+      summary: Обновить регион
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/RegionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegionPatchRequest"
+      responses:
+        "200":
+          description: Регион обновлён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteRegion
+      summary: Деактивировать регион
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/RegionId"
+      responses:
+        "204":
+          description: Регион деактивирован
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/sensor-types:
+    get:
+      operationId: listSensorTypes
+      summary: Список типов датчиков
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница типов датчиков
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedSensorTypes"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createSensorType
+      summary: Создать тип датчика
+      tags: [ReferenceData]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorTypeCreateRequest"
+      responses:
+        "201":
+          description: Тип датчика создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorType"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/sensor-types/{id}:
+    get:
+      operationId: getSensorTypeById
+      summary: Получить тип датчика
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/SensorTypeId"
+      responses:
+        "200":
+          description: Тип датчика
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorType"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchSensorType
+      summary: Обновить тип датчика
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/SensorTypeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorTypePatchRequest"
+      responses:
+        "200":
+          description: Тип датчика обновлён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorType"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteSensorType
+      summary: Деактивировать тип датчика
+      tags: [ReferenceData]
+      parameters:
+        - $ref: "#/components/parameters/SensorTypeId"
+      responses:
+        "204":
+          description: Тип датчика деактивирован
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/locations:
+    get:
+      operationId: listLocations
+      summary: Список локаций
+      tags: [CatalogAdmin]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница локаций
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedLocations"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createLocation
+      summary: Создать локацию
+      tags: [CatalogAdmin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationCreateRequest"
+      responses:
+        "201":
+          description: Локация создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/locations/{id}:
+    get:
+      operationId: getLocationById
+      summary: Получить локацию
+      tags: [CatalogAdmin]
+      parameters:
+        - $ref: "#/components/parameters/LocationId"
+      responses:
+        "200":
+          description: Локация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchLocation
+      summary: Обновить локацию
+      tags: [CatalogAdmin]
+      parameters:
+        - $ref: "#/components/parameters/LocationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationPatchRequest"
+      responses:
+        "200":
+          description: Локация обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteLocation
+      summary: Деактивировать локацию
+      tags: [CatalogAdmin]
+      parameters:
+        - $ref: "#/components/parameters/LocationId"
+      responses:
+        "204":
+          description: Локация деактивирована
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/sensor-digital-controller-links:
+    get:
+      operationId: listSensorDigitalControllerLinks
+      summary: Список связей датчик-контроллер
+      tags: [Topology]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница связей
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedSensorDigitalControllerLinks"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createSensorDigitalControllerLink
+      summary: Создать связь датчик-контроллер
+      tags: [Topology]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorDigitalControllerLinkCreateRequest"
+      responses:
+        "201":
+          description: Связь создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorDigitalControllerLink"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/sensor-digital-controller-links/{id}:
+    get:
+      operationId: getSensorDigitalControllerLinkById
+      summary: Получить связь датчик-контроллер
+      tags: [Topology]
+      parameters:
+        - $ref: "#/components/parameters/LinkId"
+      responses:
+        "200":
+          description: Связь
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorDigitalControllerLink"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchSensorDigitalControllerLink
+      summary: Обновить связь датчик-контроллер
+      tags: [Topology]
+      parameters:
+        - $ref: "#/components/parameters/LinkId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorDigitalControllerLinkPatchRequest"
+      responses:
+        "200":
+          description: Связь обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorDigitalControllerLink"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteSensorDigitalControllerLink
+      summary: Удалить/закрыть связь датчик-контроллер
+      tags: [Topology]
+      parameters:
+        - $ref: "#/components/parameters/LinkId"
+      responses:
+        "204":
+          description: Связь удалена или закрыт период
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/greenhouse-digital-controller-installations:
+    get:
+      operationId: listGreenhouseDigitalControllerInstallations
+      summary: Список установок контроллера на теплицу
+      tags: [Topology]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница установок
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedGreenhouseDigitalControllerInstallations"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createGreenhouseDigitalControllerInstallation
+      summary: Создать установку контроллера на теплицу
+      tags: [Topology]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GreenhouseDigitalControllerInstallationCreateRequest"
+      responses:
+        "201":
+          description: Установка создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreenhouseDigitalControllerInstallation"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/greenhouse-video-camera-installations:
+    get:
+      operationId: listGreenhouseVideoCameraInstallations
+      summary: Список установок камеры на теплицу
+      tags: [Topology]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница установок камер
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedGreenhouseVideoCameraInstallations"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createGreenhouseVideoCameraInstallation
+      summary: Создать установку камеры на теплицу
+      tags: [Topology]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GreenhouseVideoCameraInstallationCreateRequest"
+      responses:
+        "201":
+          description: Установка камеры создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreenhouseVideoCameraInstallation"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
 components:
   securitySchemes:
     bearerAuth:
@@ -414,6 +894,38 @@ components:
       in: path
       required: true
       description: Идентификатор теплицы (UUID, `greenhouses.id`)
+      schema:
+        type: string
+        format: uuid
+    RegionId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор региона (`regions.id`)
+      schema:
+        type: string
+        format: uuid
+    LocationId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор локации (`locations.id`)
+      schema:
+        type: string
+        format: uuid
+    SensorTypeId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор типа датчика (`sensor_types.id`)
+      schema:
+        type: string
+        format: uuid
+    LinkId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор записи связи/периода
       schema:
         type: string
         format: uuid
@@ -461,6 +973,218 @@ components:
         maximum: 100
         default: 25
   schemas:
+    Region:
+      type: object
+      required: [id, code, name, isActive]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    RegionCreateRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+    RegionPatchRequest:
+      type: object
+      properties:
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+        isActive: { type: boolean }
+    PagedRegions:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Region" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+    SensorType:
+      type: object
+      required: [id, code, name, isActive]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, maxLength: 64 }
+        name: { type: string, maxLength: 256 }
+        defaultUnit: { type: string, maxLength: 16, nullable: true }
+        valueMin: { type: number, format: double, nullable: true }
+        valueMax: { type: number, format: double, nullable: true }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    SensorTypeCreateRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, maxLength: 64 }
+        name: { type: string, maxLength: 256 }
+        defaultUnit: { type: string, maxLength: 16, nullable: true }
+        valueMin: { type: number, format: double, nullable: true }
+        valueMax: { type: number, format: double, nullable: true }
+    SensorTypePatchRequest:
+      type: object
+      properties:
+        code: { type: string, maxLength: 64 }
+        name: { type: string, maxLength: 256 }
+        defaultUnit: { type: string, maxLength: 16, nullable: true }
+        valueMin: { type: number, format: double, nullable: true }
+        valueMax: { type: number, format: double, nullable: true }
+        isActive: { type: boolean }
+    PagedSensorTypes:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SensorType" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+    Location:
+      type: object
+      required: [id, regionId, code, name, isActive]
+      properties:
+        id: { type: string, format: uuid }
+        regionId: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+        address: { type: string, maxLength: 512, nullable: true }
+        latitude: { type: number, format: double, nullable: true }
+        longitude: { type: number, format: double, nullable: true }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    LocationCreateRequest:
+      type: object
+      required: [regionId, code, name]
+      properties:
+        regionId: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+        address: { type: string, maxLength: 512, nullable: true }
+        latitude: { type: number, format: double, nullable: true }
+        longitude: { type: number, format: double, nullable: true }
+    LocationPatchRequest:
+      type: object
+      properties:
+        regionId: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+        address: { type: string, maxLength: 512, nullable: true }
+        latitude: { type: number, format: double, nullable: true }
+        longitude: { type: number, format: double, nullable: true }
+        isActive: { type: boolean }
+    PagedLocations:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Location" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+    SensorDigitalControllerLink:
+      type: object
+      required: [id, sensorId, digitalControllerId, externalSensorKey, sdate]
+      properties:
+        id: { type: string, format: uuid }
+        sensorId: { type: string, format: uuid }
+        digitalControllerId: { type: string, format: uuid }
+        externalSensorKey: { type: string, maxLength: 128 }
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    SensorDigitalControllerLinkCreateRequest:
+      type: object
+      required: [sensorId, digitalControllerId, externalSensorKey, sdate]
+      properties:
+        sensorId: { type: string, format: uuid }
+        digitalControllerId: { type: string, format: uuid }
+        externalSensorKey: { type: string, maxLength: 128 }
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+    SensorDigitalControllerLinkPatchRequest:
+      type: object
+      properties:
+        externalSensorKey: { type: string, maxLength: 128 }
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+    PagedSensorDigitalControllerLinks:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SensorDigitalControllerLink" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+    GreenhouseDigitalControllerInstallation:
+      type: object
+      required: [id, digitalControllerId, greenhouseId, sdate]
+      properties:
+        id: { type: string, format: uuid }
+        digitalControllerId: { type: string, format: uuid }
+        greenhouseId: { type: string, format: uuid }
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    GreenhouseDigitalControllerInstallationCreateRequest:
+      type: object
+      required: [digitalControllerId, greenhouseId, sdate]
+      properties:
+        digitalControllerId: { type: string, format: uuid }
+        greenhouseId: { type: string, format: uuid }
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+    PagedGreenhouseDigitalControllerInstallations:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/GreenhouseDigitalControllerInstallation" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+    GreenhouseVideoCameraInstallation:
+      type: object
+      required: [id, videoCameraId, greenhouseId, sdate]
+      properties:
+        id: { type: string, format: uuid }
+        videoCameraId: { type: string, format: uuid }
+        greenhouseId: { type: string, format: uuid }
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    GreenhouseVideoCameraInstallationCreateRequest:
+      type: object
+      required: [videoCameraId, greenhouseId, sdate]
+      properties:
+        videoCameraId: { type: string, format: uuid }
+        greenhouseId: { type: string, format: uuid }
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+    PagedGreenhouseVideoCameraInstallations:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/GreenhouseVideoCameraInstallation" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
     Greenhouse:
       type: object
       required:
@@ -815,6 +1539,12 @@ components:
             $ref: "#/components/schemas/ProblemDetails"
     InternalServerError:
       description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Conflict:
+      description: Конфликт данных (уникальность, пересечение периодов и т.п.)
       content:
         application/json:
           schema:

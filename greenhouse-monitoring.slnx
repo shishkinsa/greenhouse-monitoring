@@ -1,32 +1,59 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="docker-compose.monitoring.yml" />
+    <File Path="docker-compose.yml" />
     <File Path="src/.editorconfig" />
     <File Path="src/Directory.Build.props" />
     <File Path="src/Directory.Packages.props" />
   </Folder>
-  <Folder Name="/src/" />
+  <Folder Name="/src/">
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/frontend/cnt_gm_web/" Type="Website" DisplayName="cnt_gm_web">
+      <BuildType Project="Debug" />
+      <Properties Name="WebsiteProperties">
+        <Property Name="Debug.AspNetCompiler.Debug" Value="&quot;True&quot;" />
+        <Property Name="Debug.AspNetCompiler.FixedNames" Value="&quot;false&quot;" />
+        <Property Name="Debug.AspNetCompiler.ForceOverwrite" Value="&quot;true&quot;" />
+        <Property Name="Debug.AspNetCompiler.PhysicalPath" Value="&quot;src\frontend\cnt_gm_web\&quot;" />
+        <Property Name="Debug.AspNetCompiler.TargetPath" Value="&quot;PrecompiledWeb\localhost_54573\&quot;" />
+        <Property Name="Debug.AspNetCompiler.Updateable" Value="&quot;true&quot;" />
+        <Property Name="Debug.AspNetCompiler.VirtualPath" Value="&quot;/localhost_54573&quot;" />
+        <Property Name="Release.AspNetCompiler.Debug" Value="&quot;False&quot;" />
+        <Property Name="Release.AspNetCompiler.FixedNames" Value="&quot;false&quot;" />
+        <Property Name="Release.AspNetCompiler.ForceOverwrite" Value="&quot;true&quot;" />
+        <Property Name="Release.AspNetCompiler.PhysicalPath" Value="&quot;src\frontend\cnt_gm_web\&quot;" />
+        <Property Name="Release.AspNetCompiler.TargetPath" Value="&quot;PrecompiledWeb\localhost_54573\&quot;" />
+        <Property Name="Release.AspNetCompiler.Updateable" Value="&quot;true&quot;" />
+        <Property Name="Release.AspNetCompiler.VirtualPath" Value="&quot;/localhost_54573&quot;" />
+        <Property Name="TargetFrameworkMoniker" Value="&quot;.NETFramework,Version%3Dv4.0&quot;" />
+        <Property Name="VWDPort" Value="&quot;54573&quot;" />
+      </Properties>
+    </Project>
+  </Folder>
+  <Folder Name="/src/lib/">
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/lib/GM.Shared.Observability/GM.Shared.Observability.csproj" />
+  </Folder>
   <Folder Name="/src/webapi/" />
   <Folder Name="/src/webapi/cnt_gm_webapi/" />
   <Folder Name="/src/webapi/cnt_gm_webapi/0 Utils/">
-    <Project Path="src/webapi/cnt_gm_webapi/0 Utils/GM.WebApi.Utils/GM.WebApi.Utils.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/0 Utils/GM.WebApi.Utils/GM.WebApi.Utils.csproj" />
   </Folder>
   <Folder Name="/src/webapi/cnt_gm_webapi/1 Entities/">
-    <Project Path="src/webapi/cnt_gm_webapi/1 Entities/GM.WebApi.Entities/GM.WebApi.Entities.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/1 Entities/GM.WebApi.Entities/GM.WebApi.Entities.csproj" />
   </Folder>
   <Folder Name="/src/webapi/cnt_gm_webapi/2 Infrastructure.Interfaces/">
-    <Project Path="src/webapi/cnt_gm_webapi/2 Infrastructure.Interfaces/GM.WebApi.Infrastructure.Interfaces/GM.WebApi.Infrastructure.Interfaces.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/2 Infrastructure.Interfaces/GM.WebApi.Infrastructure.Interfaces/GM.WebApi.Infrastructure.Interfaces.csproj" />
   </Folder>
   <Folder Name="/src/webapi/cnt_gm_webapi/3 UseCases/">
-    <Project Path="src/webapi/cnt_gm_webapi/3 UseCases/GM.WebApi.UseCases/GM.WebApi.UseCases.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/3 UseCases/GM.WebApi.UseCases/GM.WebApi.UseCases.csproj" />
   </Folder>
   <Folder Name="/src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/">
-    <Project Path="src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/GM.WebApi.DataAccess.Postgres/GM.WebApi.DataAccess.Postgres.csproj" />
-    <Project Path="src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/GM.WebApi.Infrastructure.Implementation/GM.WebApi.Infrastructure.Implementation.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/GM.WebApi.DataAccess.Postgres/GM.WebApi.DataAccess.Postgres.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/5 Infrastructure.Implementation/GM.WebApi.Infrastructure.Implementation/GM.WebApi.Infrastructure.Implementation.csproj" />
   </Folder>
   <Folder Name="/src/webapi/cnt_gm_webapi/6 WebApp/">
-    <Project Path="src/webapi/cnt_gm_webapi/6 WebApp/GM.WebApi.WebApp.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/6 WebApp/GM.WebApi.WebApp.csproj" />
   </Folder>
   <Folder Name="/src/webapi/cnt_gm_webapi/7 Tests/">
-    <Project Path="src/webapi/cnt_gm_webapi/7 Tests/GM.WebApi.Tests/GM.WebApi.Tests.csproj" />
+    <Project Path="D:/00 DEV/00-07 AI/greenhouse-monitoring/src/webapi/cnt_gm_webapi/7 Tests/GM.WebApi.Tests/GM.WebApi.Tests.csproj" />
   </Folder>
 </Solution>
