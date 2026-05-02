@@ -17,7 +17,7 @@ info:
 
     Эндпоинты с ответом `101 Switching Protocols` предполагают обновление до WebSocket; форма сообщений для датчиков описана схемой `GreenhouseSensorLivePayload`.
 servers:
-  - url: https://api.example.com
+  - url: http://localhost:5025
     description: Пример базового URL (замените на фактический хост окружения)
 security:
   - bearerAuth: []
@@ -452,7 +452,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Region"
+                $ref: "#/components/schemas/GetRegionByIdResponse"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -983,6 +983,13 @@ components:
         isActive: { type: boolean }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+    GetRegionByIdResponse:
+      type: object
+      required: [data]
+      description: Обёртка ответа GET региона по id (полезная нагрузка в data)
+      properties:
+        data:
+          $ref: "#/components/schemas/Region"
     RegionCreateRequest:
       type: object
       required: [code, name]

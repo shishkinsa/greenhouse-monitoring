@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "GM.WebApi.Utils/1.0.0": {
+        "runtime": {
+          "GM.WebApi.Utils.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "GM.WebApi.Utils/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
