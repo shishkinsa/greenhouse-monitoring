@@ -82,4 +82,22 @@ public class ListRegionsQueryHandlerTests
         Assert.Equal(1, result.PageSize);
         Assert.Equal(2, result.TotalItems);
     }
+
+    [Fact]
+    public async Task HandleAsync_empty_database_returns_empty_items_and_zero_total()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(nameof(HandleAsync_empty_database_returns_empty_items_and_zero_total))
+            .Options;
+
+        await using var db = new AppDbContext(options);
+        var handler = new ListRegionsQueryHandler(db);
+
+        var result = await handler.HandleAsync(new ListRegionsQuery { Page = 1, PageSize = 10 });
+
+        Assert.Empty(result.Items);
+        Assert.Equal(0, result.TotalItems);
+        Assert.Equal(1, result.Page);
+        Assert.Equal(10, result.PageSize);
+    }
 }

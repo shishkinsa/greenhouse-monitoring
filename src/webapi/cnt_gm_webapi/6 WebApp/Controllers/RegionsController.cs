@@ -9,6 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 using Requestum;
 using GM.WebApi.UseCases.Handlers.Region.Queries.GetRegionById;
 using GM.WebApi.UseCases.Handlers.Region.Queries.GetRegionById.Responses;
+using GM.WebApi.UseCases.Handlers.Region.Commands.DeleteRegion;
+using GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion;
+using GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion.Requests;
+using GM.WebApi.UseCases.Handlers.Region.DTOs;
 
 namespace GM.WebApi.WebApp.Controllers;
 
@@ -56,5 +60,40 @@ public class RegionsController : ControllerBase
             cancellationToken);
 
         return Ok(result);
+    }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<RegionDto>> PatchRegionAsync(
+        [FromRoute] Guid id,
+        [FromBody] PatchRegionRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request is null)
+        {
+            return BadRequest();
+        }
+
+        var result = await _requestum.ExecuteAsync<PatchRegionCommand, RegionDto>(
+            new PatchRegionCommand
+            {
+                RegionId = id,
+                Code = request.Code,
+                Name = request.Name,
+                IsActive = request.IsActive
+            });
+
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteRegionAsync(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        await _requestum.ExecuteAsync<DeleteRegionCommand>(
+            new DeleteRegionCommand { RegionId = id },
+            cancellationToken);
+
+        return NoContent();
     }
 }
