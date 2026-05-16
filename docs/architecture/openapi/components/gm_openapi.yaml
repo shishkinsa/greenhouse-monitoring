@@ -1,10 +1,13 @@
 openapi: "3.0.3"
 info:
   title: API Greenhouse Monitoring
-  version: 1.1.0
+  version: 1.3.0
   description: |
     REST и WebSocket-совместимые операции мониторинга теплиц: метаданные (организация → теплицы → камеры), live- и архивное видео,
     онлайн-телеметрия датчиков, поиск событий и выгрузка рядов для графиков (FR-02), GraphQL для аналитики.
+
+    **Справочники и ERD:** полный CRUD операционных сущностей (`greenhouses`, `sensors`, `digital_controllers`, `video_cameras`) и операции по строкам топологии
+    с `sdate`/`edate` согласованы с логической моделью `docs/architecture/diagram/data/cnt_gm_db/20-metadata-database-structure.md`.
 
     **Идентификаторы:** в URL и JSON используются UUID, согласованные с метаданными `CNT_GM_DB` (PostgreSQL).
     Код теплицы `code` на объекте и в MQTT (`greenhouse_code` в интеграции edge) сопоставляется с полем `code` в ресурсе теплицы;
@@ -22,20 +25,32 @@ servers:
 security:
   - bearerAuth: []
 tags:
-  - name: Common
-    description: Общие операции (метаданные, списки)
-  - name: ReferenceData
-    description: CRUD мастер-справочников (regions, sensor_types)
-  - name: CatalogAdmin
-    description: CRUD операционных справочников (organizations, locations, greenhouses, sensors, controllers, cameras)
-  - name: Topology
-    description: CRUD связей и установок с периодами действия (sdate/edate)
-  - name: DigitalController
-    description: Операции по данным цифровых датчиков и аналитике
-  - name: VideoCamera
-    description: Операции по видеоконтенту
-  - name: Events
-    description: Поиск событий и архив по сценарию инженера (FR-02)
+  - name: MasterCatalog.Regions
+    description: Мастер-справочник регионов (`regions`).
+  - name: MasterCatalog.SensorTypes
+    description: Мастер-справочник типов датчиков (`sensor_types`).
+  - name: Catalog.Locations
+    description: Операционный справочник локаций (`locations`).
+  - name: Catalog.Greenhouses
+    description: Операционный справочник теплиц (`greenhouses`).
+  - name: Catalog.Sensors
+    description: Операционный справочник экземпляров датчиков (`sensors`).
+  - name: Catalog.DigitalControllers
+    description: Операционный справочник цифровых контроллеров (`digital_controllers`).
+  - name: Catalog.VideoCameras
+    description: Операционный справочник видеокамер (`video_cameras`); проекции списков по теплице.
+  - name: Topology.Links
+    description: Периоды связи датчик ↔ контроллер (`sensor_digital_controller_links`).
+  - name: Topology.ControllerInstallations
+    description: Периоды установки контроллера на теплицу (`greenhouse_digital_controller_installations`).
+  - name: Topology.CameraInstallations
+    description: Периоды установки камеры на теплицу (`greenhouse_video_camera_installations`).
+  - name: Monitoring.Sensors
+    description: Онлайн-показания, снимок и аналитика GraphQL по данным датчиков (не CRUD справочника).
+  - name: Monitoring.Video
+    description: Live- и архивное видео по камере (не CRUD справочника).
+  - name: Analytics.Events
+    description: Поиск событий, детали, ряды и архивное видео в контексте события (FR-02).
 paths:
   /api/v1/organisations/{id}/greenhouses:
     description: |
@@ -45,7 +60,7 @@ paths:
       operationId: listGreenhousesByOrganisation
       summary: Список теплиц (с пагинацией)
       tags:
-        - Common
+        - Catalog.Greenhouses
       parameters:
         - $ref: "#/components/parameters/OrganisationId"
         - $ref: "#/components/parameters/Page"
@@ -68,12 +83,14 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /api/v1/greenhouses/{id}/video-cameras:
-    description: Список камер теплицы (до 5 на объект, BR-R02).
+    description: |
+      **Представление для UI:** плоский список экземпляров `video_cameras`, связанных с теплицей (эквивалент фильтрации по действующим `greenhouse_video_camera_installations`, до 5 на объект, BR-R02).
+      Точные строки периодов (`sdate` / `edate`) — в `GET /api/v1/greenhouses/{id}/video-camera-installations`.
     get:
       operationId: listVideoCamerasByGreenhouse
       summary: Список видеокамер в теплице
       tags:
-        - Common
+        - Catalog.VideoCameras
       parameters:
         - $ref: "#/components/parameters/GreenhouseId"
         - $ref: "#/components/parameters/Page"
@@ -95,6 +112,77 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /api/v1/greenhouses/{id}/digital-controller-installations:
+    description: |
+      REST-ресурс установок контроллера на теплицу (`greenhouse_digital_controller_installations`). Предпочтительный способ получить «какие контроллеры стоят на теплице» вместо обхода глобального списка.
+    get:
+      operationId: listDigitalControllerInstallationsByGreenhouse
+      summary: Список установок контроллеров на теплице
+      tags: [Topology.ControllerInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseId"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: active_on
+          in: query
+          required: false
+          description: |
+            Дата (UTC), на которую интервал установки (`sdate`–`edate`, `edate` пустой — открытый конец) должен считаться действующим. Без параметра возвращаются все строки с учётом пагинации.
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Страница установок контроллеров на данной теплице
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedGreenhouseDigitalControllerInstallations"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/greenhouses/{id}/video-camera-installations:
+    description: |
+      Строки `greenhouse_video_camera_installations` (периоды `sdate`/`edate`). Для плоского списка камер без периодов см. `GET /api/v1/greenhouses/{id}/video-cameras`.
+    get:
+      operationId: listVideoCameraInstallationsByGreenhouse
+      summary: Список установок камер на теплице
+      tags: [Topology.CameraInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseId"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: active_on
+          in: query
+          required: false
+          description: Фильтр действующей установки на дату (UTC), аналогично установкам контроллеров.
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Страница установок камер на данной теплице
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedGreenhouseVideoCameraInstallations"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v1/video-cameras/{id}/video:
     description: |
       Live-видеопоток с камеры (переход на WebSocket / WebRTC-сигналинг после Upgrade).
@@ -103,7 +191,7 @@ paths:
       operationId: getVideoCameraLiveStream
       summary: Получение видеопотока с камеры (live)
       tags:
-        - VideoCamera
+        - Monitoring.Video
       parameters:
         - $ref: "#/components/parameters/VideoCameraId"
       responses:
@@ -125,7 +213,7 @@ paths:
       operationId: getVideoCameraArchiveStream
       summary: Архивное видео с камеры по интервалу времени
       tags:
-        - VideoCamera
+        - Monitoring.Video
       parameters:
         - $ref: "#/components/parameters/VideoCameraId"
         - name: time_begin
@@ -165,7 +253,7 @@ paths:
       operationId: getGreenhouseSensorOnlineValues
       summary: Онлайн-данные датчиков теплицы (WebSocket)
       tags:
-        - DigitalController
+        - Monitoring.Sensors
       parameters:
         - $ref: "#/components/parameters/GreenhouseId"
       responses:
@@ -189,7 +277,7 @@ paths:
       operationId: getGreenhouseSensorSnapshot
       summary: Снимок показаний датчиков (REST)
       tags:
-        - DigitalController
+        - Monitoring.Sensors
       parameters:
         - $ref: "#/components/parameters/GreenhouseId"
       responses:
@@ -216,7 +304,7 @@ paths:
       operationId: searchSensorEvents
       summary: Поиск событий по критерию
       tags:
-        - Events
+        - Analytics.Events
       requestBody:
         required: true
         content:
@@ -254,7 +342,7 @@ paths:
       operationId: getSensorEventById
       summary: Получить событие по идентификатору
       tags:
-        - Events
+        - Analytics.Events
       parameters:
         - $ref: "#/components/parameters/EventId"
       responses:
@@ -280,7 +368,7 @@ paths:
       operationId: getSensorTimeseriesForEvent
       summary: Временной ряд датчиков для события
       tags:
-        - Events
+        - Analytics.Events
       parameters:
         - $ref: "#/components/parameters/EventId"
         - name: time_begin
@@ -329,8 +417,8 @@ paths:
       operationId: getEventArchiveVideoStream
       summary: Архивное видео по событию и камере
       tags:
-        - Events
-        - VideoCamera
+        - Analytics.Events
+        - Monitoring.Video
       parameters:
         - $ref: "#/components/parameters/EventId"
         - $ref: "#/components/parameters/ArchiveCameraId"
@@ -369,7 +457,7 @@ paths:
       operationId: postSensorAnalyticsGraphQL
       summary: GraphQL — аналитика по датчикам
       tags:
-        - DigitalController
+        - Monitoring.Sensors
       requestBody:
         required: true
         content:
@@ -402,7 +490,7 @@ paths:
     get:
       operationId: listRegions
       summary: Список регионов
-      tags: [ReferenceData]
+      tags: [MasterCatalog.Regions]
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PageSize"
@@ -419,7 +507,7 @@ paths:
     post:
       operationId: createRegion
       summary: Создать регион
-      tags: [ReferenceData]
+      tags: [MasterCatalog.Regions]
       requestBody:
         required: true
         content:
@@ -443,7 +531,7 @@ paths:
     get:
       operationId: getRegionById
       summary: Получить регион
-      tags: [ReferenceData]
+      tags: [MasterCatalog.Regions]
       parameters:
         - $ref: "#/components/parameters/RegionId"
       responses:
@@ -460,7 +548,7 @@ paths:
     patch:
       operationId: patchRegion
       summary: Обновить регион
-      tags: [ReferenceData]
+      tags: [MasterCatalog.Regions]
       parameters:
         - $ref: "#/components/parameters/RegionId"
       requestBody:
@@ -485,7 +573,7 @@ paths:
     delete:
       operationId: deleteRegion
       summary: Деактивировать регион
-      tags: [ReferenceData]
+      tags: [MasterCatalog.Regions]
       parameters:
         - $ref: "#/components/parameters/RegionId"
       responses:
@@ -500,7 +588,7 @@ paths:
     get:
       operationId: listSensorTypes
       summary: Список типов датчиков
-      tags: [ReferenceData]
+      tags: [MasterCatalog.SensorTypes]
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PageSize"
@@ -517,7 +605,7 @@ paths:
     post:
       operationId: createSensorType
       summary: Создать тип датчика
-      tags: [ReferenceData]
+      tags: [MasterCatalog.SensorTypes]
       requestBody:
         required: true
         content:
@@ -541,7 +629,7 @@ paths:
     get:
       operationId: getSensorTypeById
       summary: Получить тип датчика
-      tags: [ReferenceData]
+      tags: [MasterCatalog.SensorTypes]
       parameters:
         - $ref: "#/components/parameters/SensorTypeId"
       responses:
@@ -558,7 +646,7 @@ paths:
     patch:
       operationId: patchSensorType
       summary: Обновить тип датчика
-      tags: [ReferenceData]
+      tags: [MasterCatalog.SensorTypes]
       parameters:
         - $ref: "#/components/parameters/SensorTypeId"
       requestBody:
@@ -583,7 +671,7 @@ paths:
     delete:
       operationId: deleteSensorType
       summary: Деактивировать тип датчика
-      tags: [ReferenceData]
+      tags: [MasterCatalog.SensorTypes]
       parameters:
         - $ref: "#/components/parameters/SensorTypeId"
       responses:
@@ -598,7 +686,7 @@ paths:
     get:
       operationId: listLocations
       summary: Список локаций
-      tags: [CatalogAdmin]
+      tags: [Catalog.Locations]
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PageSize"
@@ -615,7 +703,7 @@ paths:
     post:
       operationId: createLocation
       summary: Создать локацию
-      tags: [CatalogAdmin]
+      tags: [Catalog.Locations]
       requestBody:
         required: true
         content:
@@ -639,7 +727,7 @@ paths:
     get:
       operationId: getLocationById
       summary: Получить локацию
-      tags: [CatalogAdmin]
+      tags: [Catalog.Locations]
       parameters:
         - $ref: "#/components/parameters/LocationId"
       responses:
@@ -656,7 +744,7 @@ paths:
     patch:
       operationId: patchLocation
       summary: Обновить локацию
-      tags: [CatalogAdmin]
+      tags: [Catalog.Locations]
       parameters:
         - $ref: "#/components/parameters/LocationId"
       requestBody:
@@ -681,7 +769,7 @@ paths:
     delete:
       operationId: deleteLocation
       summary: Деактивировать локацию
-      tags: [CatalogAdmin]
+      tags: [Catalog.Locations]
       parameters:
         - $ref: "#/components/parameters/LocationId"
       responses:
@@ -692,14 +780,488 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalServerError" }
 
-  /api/v1/sensor-digital-controller-links:
+  /api/v1/greenhouses:
     get:
-      operationId: listSensorDigitalControllerLinks
-      summary: Список связей датчик-контроллер
-      tags: [Topology]
+      operationId: listGreenhouses
+      summary: Список теплиц (каталог)
+      description: |
+        Таблица `greenhouses`. Удобная выборка по организации и локации. Список «теплицы организации для UI» по-прежнему в `GET /api/v1/organisations/{id}/greenhouses`.
+      tags: [Catalog.Greenhouses]
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PageSize"
+        - name: organisation_id
+          in: query
+          required: false
+          description: Фильтр по владельцу (`organizations.id`).
+          schema:
+            type: string
+            format: uuid
+        - name: location_id
+          in: query
+          required: false
+          description: Фильтр по локации (`locations.id`).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Страница теплиц
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedGreenhouses"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createGreenhouse
+      summary: Создать теплицу
+      tags: [Catalog.Greenhouses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GreenhouseCreateRequest"
+      responses:
+        "201":
+          description: Теплица создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Greenhouse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/greenhouses/{id}:
+    get:
+      operationId: getGreenhouseByIdCatalog
+      summary: Получить теплицу по идентификатору
+      tags: [Catalog.Greenhouses]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseId"
+      responses:
+        "200":
+          description: Теплица
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Greenhouse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchGreenhouse
+      summary: Обновить теплицу
+      tags: [Catalog.Greenhouses]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GreenhousePatchRequest"
+      responses:
+        "200":
+          description: Теплица обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Greenhouse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteGreenhouse
+      summary: Деактивировать теплицу
+      description: Устанавливает `is_active = false` в `greenhouses`.
+      tags: [Catalog.Greenhouses]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseId"
+      responses:
+        "204":
+          description: Теплица деактивирована
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/sensors:
+    get:
+      operationId: listSensors
+      summary: Список экземпляров датчиков
+      description: Справочник `sensors`. Связь с контроллером и теплицей — через таблицы периодов (топология).
+      tags: [Catalog.Sensors]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: sensor_type_id
+          in: query
+          required: false
+          description: Фильтр по типу (`sensor_types.id`).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Страница датчиков
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedSensors"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createSensor
+      summary: Создать экземпляр датчика
+      tags: [Catalog.Sensors]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorCreateRequest"
+      responses:
+        "201":
+          description: Датчик создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/sensors/{id}:
+    get:
+      operationId: getSensorById
+      summary: Получить датчик
+      tags: [Catalog.Sensors]
+      parameters:
+        - $ref: "#/components/parameters/SensorId"
+      responses:
+        "200":
+          description: Датчик
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchSensor
+      summary: Обновить датчик
+      tags: [Catalog.Sensors]
+      parameters:
+        - $ref: "#/components/parameters/SensorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorPatchRequest"
+      responses:
+        "200":
+          description: Датчик обновлён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteSensor
+      summary: Деактивировать датчик
+      tags: [Catalog.Sensors]
+      parameters:
+        - $ref: "#/components/parameters/SensorId"
+      responses:
+        "204":
+          description: Датчик деактивирован
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/digital-controllers:
+    get:
+      operationId: listDigitalControllers
+      summary: Список цифровых контроллеров
+      description: Справочник `digital_controllers`.
+      tags: [Catalog.DigitalControllers]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница контроллеров
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedDigitalControllers"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createDigitalController
+      summary: Создать запись контроллера
+      tags: [Catalog.DigitalControllers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DigitalControllerCreateRequest"
+      responses:
+        "201":
+          description: Контроллер создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigitalController"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/digital-controllers/{id}:
+    get:
+      operationId: getDigitalControllerById
+      summary: Получить контроллер
+      tags: [Catalog.DigitalControllers]
+      parameters:
+        - $ref: "#/components/parameters/DigitalControllerId"
+      responses:
+        "200":
+          description: Контроллер
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigitalController"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchDigitalController
+      summary: Обновить контроллер
+      tags: [Catalog.DigitalControllers]
+      parameters:
+        - $ref: "#/components/parameters/DigitalControllerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DigitalControllerPatchRequest"
+      responses:
+        "200":
+          description: Контроллер обновлён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigitalController"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteDigitalController
+      summary: Деактивировать контроллер
+      tags: [Catalog.DigitalControllers]
+      parameters:
+        - $ref: "#/components/parameters/DigitalControllerId"
+      responses:
+        "204":
+          description: Контроллер деактивирован
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/video-cameras:
+    get:
+      operationId: listVideoCamerasCatalog
+      summary: Список видеокамер (каталог)
+      description: |
+        Справочник `video_cameras`. Камеры в разрезе одной теплицы — `GET /api/v1/greenhouses/{id}/video-cameras` (проекция по установкам).
+      tags: [Catalog.VideoCameras]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Страница камер
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedVideoCameras"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: createVideoCamera
+      summary: Создать запись видеокамеры
+      tags: [Catalog.VideoCameras]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VideoCameraCreateRequest"
+      responses:
+        "201":
+          description: Камера создана
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoCamera"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/video-cameras/{id}:
+    get:
+      operationId: getVideoCameraByIdCatalog
+      summary: Получить видеокамеру (метаданные)
+      tags: [Catalog.VideoCameras]
+      parameters:
+        - $ref: "#/components/parameters/VideoCameraId"
+      responses:
+        "200":
+          description: Камера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoCamera"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchVideoCamera
+      summary: Обновить видеокамеру
+      tags: [Catalog.VideoCameras]
+      parameters:
+        - $ref: "#/components/parameters/VideoCameraId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VideoCameraPatchRequest"
+      responses:
+        "200":
+          description: Камера обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoCamera"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteVideoCamera
+      summary: Деактивировать видеокамеру
+      tags: [Catalog.VideoCameras]
+      parameters:
+        - $ref: "#/components/parameters/VideoCameraId"
+      responses:
+        "204":
+          description: Камера деактивирована
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/digital-controllers/{id}/sensor-digital-controller-links:
+    description: |
+      REST-вложение: все связи `sensor_digital_controller_links` для заданного `digital_controller_id`.
+      Альтернатива — `GET /api/v1/sensor-digital-controller-links?digital_controller_id=...`.
+    get:
+      operationId: listSensorDigitalControllerLinksByDigitalController
+      summary: Список привязок датчиков к контроллеру
+      tags: [Topology.Links]
+      parameters:
+        - $ref: "#/components/parameters/DigitalControllerId"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: active_on
+          in: query
+          required: false
+          description: Дата (UTC), на которую интервал связи (`sdate`–`edate`) должен считаться действующим.
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Страница связей датчик–контроллер для этого контроллера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedSensorDigitalControllerLinks"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/sensor-digital-controller-links:
+    get:
+      operationId: listSensorDigitalControllerLinks
+      summary: Список связей датчик-контроллер (глобально)
+      description: |
+        Плоская выборка. Для одного контроллера предпочтительно `GET /api/v1/digital-controllers/{id}/sensor-digital-controller-links`.
+      tags: [Topology.Links]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: digital_controller_id
+          in: query
+          required: false
+          description: Фильтр по контроллеру (`digital_controllers.id`).
+          schema:
+            type: string
+            format: uuid
+        - name: sensor_id
+          in: query
+          required: false
+          description: Фильтр по датчику (`sensors.id`).
+          schema:
+            type: string
+            format: uuid
+        - name: active_on
+          in: query
+          required: false
+          description: Дата (UTC), на которую связь должна быть активна по `sdate`/`edate`.
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: Страница связей
@@ -713,7 +1275,7 @@ paths:
     post:
       operationId: createSensorDigitalControllerLink
       summary: Создать связь датчик-контроллер
-      tags: [Topology]
+      tags: [Topology.Links]
       requestBody:
         required: true
         content:
@@ -737,7 +1299,7 @@ paths:
     get:
       operationId: getSensorDigitalControllerLinkById
       summary: Получить связь датчик-контроллер
-      tags: [Topology]
+      tags: [Topology.Links]
       parameters:
         - $ref: "#/components/parameters/LinkId"
       responses:
@@ -754,7 +1316,7 @@ paths:
     patch:
       operationId: patchSensorDigitalControllerLink
       summary: Обновить связь датчик-контроллер
-      tags: [Topology]
+      tags: [Topology.Links]
       parameters:
         - $ref: "#/components/parameters/LinkId"
       requestBody:
@@ -779,7 +1341,7 @@ paths:
     delete:
       operationId: deleteSensorDigitalControllerLink
       summary: Удалить/закрыть связь датчик-контроллер
-      tags: [Topology]
+      tags: [Topology.Links]
       parameters:
         - $ref: "#/components/parameters/LinkId"
       responses:
@@ -793,11 +1355,27 @@ paths:
   /api/v1/greenhouse-digital-controller-installations:
     get:
       operationId: listGreenhouseDigitalControllerInstallations
-      summary: Список установок контроллера на теплицу
-      tags: [Topology]
+      summary: Список установок контроллера на теплицу (глобально)
+      description: |
+        Плоская выборка по всем теплицам. Для одной теплицы предпочтительно `GET /api/v1/greenhouses/{id}/digital-controller-installations`.
+      tags: [Topology.ControllerInstallations]
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PageSize"
+        - name: greenhouse_id
+          in: query
+          required: false
+          description: Фильтр по теплице (`greenhouses.id`); эквивалент вложенного GET.
+          schema:
+            type: string
+            format: uuid
+        - name: active_on
+          in: query
+          required: false
+          description: Дата (UTC), на которую установка должна быть активна по `sdate`/`edate`.
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: Страница установок
@@ -811,7 +1389,7 @@ paths:
     post:
       operationId: createGreenhouseDigitalControllerInstallation
       summary: Создать установку контроллера на теплицу
-      tags: [Topology]
+      tags: [Topology.ControllerInstallations]
       requestBody:
         required: true
         content:
@@ -831,14 +1409,88 @@ paths:
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalServerError" }
 
+  /api/v1/greenhouse-digital-controller-installations/{id}:
+    get:
+      operationId: getGreenhouseDigitalControllerInstallationById
+      summary: Получить установку контроллера на теплицу
+      tags: [Topology.ControllerInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseDigitalControllerInstallationId"
+      responses:
+        "200":
+          description: Установка
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreenhouseDigitalControllerInstallation"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchGreenhouseDigitalControllerInstallation
+      summary: Обновить период установки контроллера
+      description: Корректировка `sdate` / `edate` (`greenhouse_digital_controller_installations`).
+      tags: [Topology.ControllerInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseDigitalControllerInstallationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GreenhouseDigitalControllerInstallationPatchRequest"
+      responses:
+        "200":
+          description: Установка обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreenhouseDigitalControllerInstallation"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteGreenhouseDigitalControllerInstallation
+      summary: Удалить или закрыть период установки
+      tags: [Topology.ControllerInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseDigitalControllerInstallationId"
+      responses:
+        "204":
+          description: Запись удалена или период закрыт
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
   /api/v1/greenhouse-video-camera-installations:
     get:
       operationId: listGreenhouseVideoCameraInstallations
-      summary: Список установок камеры на теплицу
-      tags: [Topology]
+      summary: Список установок камеры на теплицу (глобально)
+      description: |
+        Плоская выборка. Для одной теплицы предпочтительно `GET /api/v1/greenhouses/{id}/video-camera-installations`.
+      tags: [Topology.CameraInstallations]
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/PageSize"
+        - name: greenhouse_id
+          in: query
+          required: false
+          description: Фильтр по теплице (`greenhouses.id`).
+          schema:
+            type: string
+            format: uuid
+        - name: active_on
+          in: query
+          required: false
+          description: Дата (UTC), на которую установка должна быть активна по `sdate`/`edate`.
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: Страница установок камер
@@ -852,7 +1504,7 @@ paths:
     post:
       operationId: createGreenhouseVideoCameraInstallation
       summary: Создать установку камеры на теплицу
-      tags: [Topology]
+      tags: [Topology.CameraInstallations]
       requestBody:
         required: true
         content:
@@ -870,6 +1522,63 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/v1/greenhouse-video-camera-installations/{id}:
+    get:
+      operationId: getGreenhouseVideoCameraInstallationById
+      summary: Получить установку камеры на теплицу
+      tags: [Topology.CameraInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseVideoCameraInstallationId"
+      responses:
+        "200":
+          description: Установка камеры
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreenhouseVideoCameraInstallation"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    patch:
+      operationId: patchGreenhouseVideoCameraInstallation
+      summary: Обновить период установки камеры
+      tags: [Topology.CameraInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseVideoCameraInstallationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GreenhouseVideoCameraInstallationPatchRequest"
+      responses:
+        "200":
+          description: Установка обновлена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreenhouseVideoCameraInstallation"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteGreenhouseVideoCameraInstallation
+      summary: Удалить или закрыть период установки камеры
+      tags: [Topology.CameraInstallations]
+      parameters:
+        - $ref: "#/components/parameters/GreenhouseVideoCameraInstallationId"
+      responses:
+        "204":
+          description: Запись удалена или период закрыт
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalServerError" }
 components:
   securitySchemes:
@@ -926,6 +1635,38 @@ components:
       in: path
       required: true
       description: Идентификатор записи связи/периода
+      schema:
+        type: string
+        format: uuid
+    SensorId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор экземпляра датчика (`sensors.id`)
+      schema:
+        type: string
+        format: uuid
+    DigitalControllerId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор цифрового контроллера (`digital_controllers.id`)
+      schema:
+        type: string
+        format: uuid
+    GreenhouseDigitalControllerInstallationId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор строки `greenhouse_digital_controller_installations`
+      schema:
+        type: string
+        format: uuid
+    GreenhouseVideoCameraInstallationId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор строки `greenhouse_video_camera_installations`
       schema:
         type: string
         format: uuid
@@ -1097,6 +1838,118 @@ components:
         page: { type: integer, minimum: 1 }
         pageSize: { type: integer, minimum: 1 }
         totalItems: { type: integer, minimum: 0 }
+    Sensor:
+      type: object
+      required: [id, sensorTypeId, displayName, isActive, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        sensorTypeId: { type: string, format: uuid, description: FK → `sensor_types.id` }
+        displayName: { type: string, maxLength: 256 }
+        installPosition: { type: string, maxLength: 128, nullable: true }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    SensorCreateRequest:
+      type: object
+      required: [sensorTypeId, displayName]
+      properties:
+        sensorTypeId: { type: string, format: uuid }
+        displayName: { type: string, maxLength: 256 }
+        installPosition: { type: string, maxLength: 128, nullable: true }
+    SensorPatchRequest:
+      type: object
+      properties:
+        sensorTypeId: { type: string, format: uuid }
+        displayName: { type: string, maxLength: 256 }
+        installPosition: { type: string, maxLength: 128, nullable: true }
+        isActive: { type: boolean }
+    PagedSensors:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Sensor" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+    DigitalController:
+      type: object
+      required: [id, code, displayName, isActive, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, maxLength: 64 }
+        displayName: { type: string, maxLength: 256 }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DigitalControllerCreateRequest:
+      type: object
+      required: [code, displayName]
+      properties:
+        code: { type: string, maxLength: 64 }
+        displayName: { type: string, maxLength: 256 }
+    DigitalControllerPatchRequest:
+      type: object
+      properties:
+        code: { type: string, maxLength: 64 }
+        displayName: { type: string, maxLength: 256 }
+        isActive: { type: boolean }
+    PagedDigitalControllers:
+      type: object
+      required: [items, page, pageSize, totalItems]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/DigitalController" }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        totalItems: { type: integer, minimum: 0 }
+    GreenhouseCreateRequest:
+      type: object
+      required: [organisationId, locationId, code, name]
+      properties:
+        organisationId: { type: string, format: uuid }
+        locationId: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+        areaM2: { type: number, format: double, nullable: true }
+        timezone: { type: string, maxLength: 64, nullable: true }
+        commissionedAt: { type: string, format: date, nullable: true }
+    GreenhousePatchRequest:
+      type: object
+      properties:
+        locationId: { type: string, format: uuid }
+        code: { type: string, maxLength: 32 }
+        name: { type: string, maxLength: 256 }
+        areaM2: { type: number, format: double, nullable: true }
+        timezone: { type: string, maxLength: 64, nullable: true }
+        isActive: { type: boolean }
+        commissionedAt: { type: string, format: date, nullable: true }
+    VideoCameraCreateRequest:
+      type: object
+      required: [cameraCode, name]
+      properties:
+        cameraCode: { type: string, maxLength: 64 }
+        name: { type: string, maxLength: 256 }
+        streamProfile: { type: string, maxLength: 64, nullable: true }
+    VideoCameraPatchRequest:
+      type: object
+      properties:
+        cameraCode: { type: string, maxLength: 64 }
+        name: { type: string, maxLength: 256 }
+        streamProfile: { type: string, maxLength: 64, nullable: true }
+        isActive: { type: boolean }
+    GreenhouseDigitalControllerInstallationPatchRequest:
+      type: object
+      properties:
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
+    GreenhouseVideoCameraInstallationPatchRequest:
+      type: object
+      properties:
+        sdate: { type: string, format: date }
+        edate: { type: string, format: date, nullable: true }
     SensorDigitalControllerLink:
       type: object
       required: [id, sensorId, digitalControllerId, externalSensorKey, sdate]
@@ -1194,10 +2047,16 @@ components:
         totalItems: { type: integer, minimum: 0 }
     Greenhouse:
       type: object
+      description: Сущность `greenhouses` (см. ERD CNT_GM_DB).
       required:
         - id
+        - code
         - name
         - organisationId
+        - locationId
+        - isActive
+        - createdAt
+        - updatedAt
       properties:
         id:
           description: Идентификатор теплицы (`greenhouses.id`)
@@ -1205,28 +2064,63 @@ components:
           format: uuid
           example: "550e8400-e29b-41d4-a716-446655440001"
         code:
-          description: Код теплицы в организации; сопоставляется с `greenhouse_code` на контроллере / в MQTT
+          description: Код теплицы уникален в паре с организацией; MQTT `greenhouse_code`
           type: string
+          maxLength: 32
           example: "gh-042"
         name:
           description: Наименование теплицы
           type: string
+          maxLength: 256
           example: Теплица 1
         organisationId:
           description: Идентификатор организации-владельца (`organizations.id`)
           type: string
           format: uuid
           example: "550e8400-e29b-41d4-a716-446655440000"
-        address:
-          description: Адрес или строка для отображения (может дублировать данные локации)
+        locationId:
+          description: Идентификатор локации (`locations.id`)
           type: string
+          format: uuid
+        areaM2:
+          description: Площадь, м²
+          type: number
+          format: double
+          nullable: true
+        timezone:
+          description: IANA timezone, например `Europe/Moscow`
+          type: string
+          maxLength: 64
+          nullable: true
+        isActive:
+          type: boolean
+        commissionedAt:
+          description: Дата ввода в эксплуатацию
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        address:
+          description: Денормализованная строка для UI (опционально; полный адрес — у локации)
+          type: string
+          nullable: true
           example: Россия, Московская область, город Рязань
     VideoCamera:
       type: object
+      description: |
+        Сущность `video_cameras`. При ответе `GET /api/v1/greenhouses/{id}/video-cameras` поле `greenhouseId` заполняется контекстом списка; в каталоге `GET /api/v1/video-cameras` может отсутствовать.
       required:
         - id
+        - cameraCode
         - name
-        - greenhouseId
+        - isActive
+        - createdAt
+        - updatedAt
       properties:
         id:
           description: Идентификатор камеры (`video_cameras.id`)
@@ -1236,19 +2130,36 @@ components:
         cameraCode:
           description: Уникальный код экземпляра камеры (`video_cameras.camera_code`)
           type: string
+          maxLength: 64
           example: "cam-main"
         name:
           description: Наименование камеры
           type: string
+          maxLength: 256
           example: Камера 1
+        streamProfile:
+          description: Профиль потока по умолчанию (`main`, `sub`, …)
+          type: string
+          maxLength: 64
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
         greenhouseId:
-          description: Идентификатор теплицы
+          description: Идентификатор теплицы — при проекции списка по теплице
           type: string
           format: uuid
+          nullable: true
           example: "550e8400-e29b-41d4-a716-446655440001"
         ipAddress:
-          description: Последний известный IP камеры (опционально, для диагностики; не для клиентского RTSP в браузере)
+          description: Последний известный IP (диагностика; не RTSP URL)
           type: string
+          nullable: true
           example: 10.14.225.101
     PagedGreenhouses:
       type: object

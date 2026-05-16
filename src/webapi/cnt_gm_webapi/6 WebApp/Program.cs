@@ -1,7 +1,7 @@
 using GM.WebApi.DataAccess.Postgres.Data;
 using GM.WebApi.Infrastructure.Interfaces.DataAccess;
+using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion;
 using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion.Validations;
-using GM.WebApi.UseCases.Handlers.WeatherForecast.Queries.GetWeather;
 using GM.WebApi.WebApp.ExceptionHandlers;
 using GM.Shared.Observability.Extensions;
 using FluentValidation;
@@ -23,7 +23,7 @@ builder.Services.AddScoped<IDbContext>(sp => sp.GetRequiredService<AppDbContext>
 builder.Services.AddValidatorsFromAssemblyContaining<CreateRegionCommandValidator>();
 builder.Services.AddRequestum(cfg =>
 {
-    cfg.RegisterHandlers(typeof(GetWeatherForecastQuery).Assembly);
+    cfg.RegisterHandlers(typeof(CreateRegionCommand).Assembly);
     cfg.RegisterMiddlewares(typeof(Program).Assembly);
 });
 builder.Services.AddGmObservability(

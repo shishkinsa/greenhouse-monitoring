@@ -336,6 +336,7 @@ erDiagram
 
 ## Связанные документы
 
+- REST API: [gm_openapi.yaml](../../../openapi/components/gm_openapi.yaml) — каталог теплиц, датчиков, контроллеров, камер и операции топологии (`sdate`/`edate`) приведены в соответствие с таблицами этого раздела (начиная с версии спецификации 1.2.0).
 - Визуальная ERD: [21-erd-cnt-gm-db.drawio](21-erd-cnt-gm-db.drawio) — при расхождении с таблицами в этом файле **источником истины** считается текстовая модель выше (файл drawio обновляется отдельно).
 - Контейнер БД: [cnt_gm_db/01-model.c4](../../containers/cnt_gm_db/01-model.c4)
 - ADR по PostgreSQL: [ADR-0003](../../../adr/0003-use-postgres.md)
