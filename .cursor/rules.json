@@ -1,8 +1,7 @@
 {
-    "version": "1.1",
-    "description": "Контекстные правила Cursor; синхронизировано с .cursorrules и архитектурой Greenhouse Monitoring (C4, ADR 0001–0007).",
+    "version": "1.2",
+    "description": "Контекстные правила Cursor; синхронизировано с .cursorrules и архитектурой Greenhouse Monitoring (C4, ADR 0001–0009).",
     "source_config": ".cursorrules",
-
     "project": {
         "name": "Greenhouse Monitoring",
         "domain": "AgTech — мониторинг теплиц (датчики, видео, доступ пользователей)",
@@ -12,32 +11,27 @@
             "docs/ai/cursor-rules.md"
         ]
     },
-
-    "stack_summary": "React+TypeScript (Web, Identity Web); ASP.NET Core .NET 10 (WebAPI, SavingService, Identity+OpenIddict); RabbitMQ MQTT+AMQP; PostgreSQL, ClickHouse, Redis; go2rtc; MinIO S3; HashiCorp Vault. Подробно — docs/ai/project-context.md.",
-
+    "stack_summary": "React+TypeScript (Web, Identity Web); ASP.NET Core .NET 10 (WebAPI, SavingService, Identity+OpenIddict); RabbitMQ MQTT+AMQP; PostgreSQL, ClickHouse, Redis; go2rtc; MinIO S3; HashiCorp Vault; Ant Design. Подробно — docs/ai/project-context.md.",
     "workflow": {
         "before_any_task": [
             "Определи слой: frontend / backend / архитектура / инфраструктура.",
             "Учти docs/ai/project-context.md и docs/ai/tech-stack.md.",
-            "Проверь docs/requirements/ и docs/architecture/01-calc-architecture.md при нагрузке и границах.",
+            "Проверь docs/requirements/, docs/architecture/01-calc-architecture.md и при деплое — docs/architecture/02-deployment-resources-estimate.md.",
             "Сверься с docs/architecture/adr/ и LikeC4 в docs/architecture/diagram/."
         ],
         "change_order": [
             "Требования → архитектура (модели, ADR) → код → документация артефактов (docs/ai/cursor-rules.md)."
         ]
     },
-
     "public_contracts": {
-        "openapi_canonical": "docs/openapi/openapi.yaml",
-        "openapi_status": "PLACEHOLDER — каталог docs/openapi/ может отсутствовать; не менять публичные REST-контракты без обновления спецификации.",
+        "openapi_canonical": "docs/architecture/openapi/components/gm_openapi.yaml",
+        "openapi_status": "Канон REST — gm_openapi.yaml; не менять публичные контракты без синхронного обновления спецификации и кода.",
         "graphql_note": "GraphQL/WebSocket в LikeC4; TBD отдельный артефакт схемы как контракт."
     },
-
     "communication": {
         "language": "ru",
         "note": "Ответы пользователю на русском, если не попросили иное."
     },
-
     "adr": {
         "directory": "docs/architecture/adr/",
         "template": "docs/architecture/adr/template.md",
@@ -48,10 +42,11 @@
             "docs/architecture/adr/0004-clickhouse-telemetry.md",
             "docs/architecture/adr/0005-rabbitmq-mqtt-broker.md",
             "docs/architecture/adr/0006-minio-s3-object-storage.md",
-            "docs/architecture/adr/0007-hashicorp-vault-secrets.md"
+            "docs/architecture/adr/0007-hashicorp-vault-secrets.md",
+            "docs/architecture/adr/0008-redis-sentinel-cache-sessions.md",
+            "docs/architecture/adr/0009-ant-design-ui-library.md"
         ]
     },
-
     "docs_paths": {
         "root": "docs",
         "ai": "docs/ai",
@@ -59,18 +54,21 @@
         "architecture": "docs/architecture",
         "requirements": "docs/requirements",
         "adr": "docs/architecture/adr",
+        "specs": "docs/architecture/specs",
         "diagram_context": "docs/architecture/diagram/context",
         "diagram_containers": "docs/architecture/diagram/containers",
-        "openapi": "docs/openapi"
+        "diagram_data": "docs/architecture/diagram/data",
+        "diagram_behavior": "docs/architecture/diagram/behavior",
+        "diagram_infrastructure": "docs/architecture/diagram/infrastructure",
+        "diagram_security": "docs/architecture/diagram/security",
+        "diagram_integration": "docs/architecture/diagram/integration",
+        "openapi": "docs/architecture/openapi"
     },
-
     "placeholders": [
         "TBD: docs/architecture/adr/README.md — индекс ADR",
-        "TBD: docs/openapi/openapi.yaml — каноничная спецификация при появлении",
         "TBD: docs/architecture/adr/0002-cqrs-pattern.md — принять решение или удалить ссылку",
         "TBD: docs/standards/api-standards.md, scripts/validate-adr.js — при появлении"
     ],
-
     "rules": [
         {
             "name": "new-csharp-file",
@@ -78,17 +76,21 @@
                 "pattern": "**/*.cs",
                 "action": "create"
             },
-            "instructions": "При создании или существенном изменении C# кода (backend ASP.NET Core):",
+            "instructions": "При создании или существенном изменении C# кода (CNT_GM_WebAPI, CNT_GM_SavingService, CNT_GM_Identity_WebAPI):",
             "docs_to_check": [
                 "docs/ai/project-context.md",
                 "docs/standards/c-charp-naming-conventions.md",
                 "docs/standards/coding-standards.md",
+                "docs/architecture/specs/10-app-architecture.md",
+                "docs/architecture/specs/backend/11-backend-app-architecture.md",
                 "docs/architecture/adr/0001-dotnet-aspnet-core-backend.md",
                 "docs/architecture/01-calc-architecture.md",
+                "docs/architecture/openapi/components/gm_openapi.yaml",
                 "docs/architecture/diagram/containers/"
             ],
             "validation": {
                 "naming": "docs/standards/c-charp-naming-conventions.md",
+                "sql_naming": "docs/standards/psql-naming-conventions.md",
                 "requirements": "docs/requirements/functional/",
                 "nfr": "docs/requirements/non-functional/"
             }
@@ -108,7 +110,9 @@
                 "docs/architecture/specs/frontend/12-frontend-app-architecture.md",
                 "src/frontend/cnt_gm_web/src/README.md",
                 "docs/architecture/adr/0002-react-typescript-frontend.md",
-                "docs/architecture/diagram/containers/cnt_gm_web/"
+                "docs/architecture/adr/0009-ant-design-ui-library.md",
+                "docs/architecture/diagram/containers/cnt_gm_web/",
+                "docs/architecture/diagram/containers/cnt_gm_identity_web/"
             ],
             "validation": {
                 "naming": "docs/standards/react-naming-conventions.md и ts-naming-conventions.md",
@@ -141,17 +145,17 @@
         {
             "name": "openapi-or-public-api",
             "trigger": {
-                "pattern": "docs/openapi/**/*.yaml",
+                "pattern": "docs/architecture/openapi/**/*.yaml",
                 "action": "edit"
             },
-            "instructions": "Публичные REST-контракты: канон — OpenAPI; изменения кода клиента/сервера должны совпадать со спецификацией.",
+            "instructions": "Публичные REST-контракты: канон — docs/architecture/openapi/components/gm_openapi.yaml; изменения кода клиента/сервера должны совпадать со спецификацией.",
             "docs_to_check": [
                 "docs/ai/tech-stack.md",
+                "docs/ai/project-context.md",
                 "docs/requirements/functional/"
             ]
         }
     ],
-
     "contexts": [
         {
             "name": "architecture-review",
@@ -159,13 +163,18 @@
                 "docs/architecture/**/*.md",
                 "docs/architecture/**/*.c4"
             ],
-            "instructions": "Проверка архитектурных документов и диаграмм LikeC4; не противоречить ADR 0001–0007 без нового ADR.",
+            "instructions": "Проверка архитектурных документов и диаграмм LikeC4; не противоречить ADR 0001–0009 без нового ADR.",
             "docs_to_load": [
                 "docs/ai/project-context.md",
+                "docs/architecture/README.md",
                 "docs/architecture/01-calc-architecture.md",
+                "docs/architecture/02-deployment-resources-estimate.md",
                 "docs/requirements/non-functional/*.md",
                 "docs/architecture/diagram/context/*.c4",
-                "docs/architecture/diagram/containers/**/*.c4"
+                "docs/architecture/diagram/containers/**/*.c4",
+                "docs/architecture/diagram/data/",
+                "docs/architecture/diagram/infrastructure/",
+                "docs/architecture/diagram/security/"
             ],
             "adr_to_consider": [
                 "docs/architecture/adr/0001-dotnet-aspnet-core-backend.md",
@@ -174,7 +183,9 @@
                 "docs/architecture/adr/0004-clickhouse-telemetry.md",
                 "docs/architecture/adr/0005-rabbitmq-mqtt-broker.md",
                 "docs/architecture/adr/0006-minio-s3-object-storage.md",
-                "docs/architecture/adr/0007-hashicorp-vault-secrets.md"
+                "docs/architecture/adr/0007-hashicorp-vault-secrets.md",
+                "docs/architecture/adr/0008-redis-sentinel-cache-sessions.md",
+                "docs/architecture/adr/0009-ant-design-ui-library.md"
             ],
             "checklists": {
                 "adr": "TBD: docs/architecture/adr/checklist.md",
@@ -199,19 +210,20 @@
         {
             "name": "api-design",
             "patterns": [
-                "docs/openapi/**/*.yaml",
-                "docs/openapi/**/*.json"
+                "docs/architecture/openapi/**/*.yaml",
+                "docs/architecture/openapi/**/*.json"
             ],
-            "instructions": "Проектирование и правка OpenAPI; при отсутствии каталога — создать docs/openapi/ и каноничный файл, затем синхронизировать с .cursorrules.",
+            "instructions": "Проектирование и правка OpenAPI; канон — docs/architecture/openapi/components/gm_openapi.yaml; синхронизировать с .cursorrules и кодом Web API / клиента.",
             "docs_to_load": [
                 "docs/ai/tech-stack.md",
                 "docs/ai/project-context.md",
+                "docs/architecture/openapi/components/gm_openapi.yaml",
                 "docs/requirements/functional/03-authentication-and-access.md",
                 "docs/requirements/functional/01-live-video-monitoring.md",
                 "docs/requirements/functional/02-event-search-and-archive.md"
             ],
             "validation": {
-                "openapi": "OpenAPI 3.x при наличии файла",
+                "openapi": "OpenAPI 3.x",
                 "contracts": "Не ломать публичные контракты без обновления спецификации (см. .cursorrules public_contracts)"
             },
             "placeholders": [
@@ -220,7 +232,6 @@
             ]
         }
     ],
-
     "templates": {
         "new-adr": {
             "source": "docs/architecture/adr/template.md",
@@ -238,7 +249,6 @@
             }
         }
     },
-
     "validation_hooks": [
         {
             "name": "validate-adr",
@@ -248,12 +258,11 @@
         },
         {
             "name": "validate-openapi",
-            "trigger": "docs/openapi/*.yaml",
+            "trigger": "docs/architecture/openapi/**/*.yaml",
             "command": "npx swagger-cli validate <file>",
             "docs": "TBD: docs/standards/api-standards.md"
         }
     ],
-
     "auto_documentation": {
         "on_code_generation": {
             "update_readme": true,

@@ -12,5 +12,5 @@
 | `/docs/requirements` | Требования к системе |
 | `/docs/standards` | Стандарты и правила |
 | `/docs/architecture` | Архитектура (ADR + диаграммы) |
-| `/docs/openapi` | API спецификации |
+| `/docs/architecture/openapi` | OpenAPI (REST, gm_openapi.yaml) |
 | `/docs/public` | Сгенерированные артефакты |

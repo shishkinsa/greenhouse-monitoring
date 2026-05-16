@@ -21,5 +21,5 @@ requirements:
 
 ```yaml
 requirements:
-  - "Разрабатываемая архитектура системы должна соответствовать расчетам (docs\architecture\сalc_architecture.md)"
+  - "Разрабатываемая архитектура системы должна соответствовать расчетам (docs/architecture/01-calc-architecture.md)"
 ```
