@@ -1,24 +1,24 @@
-using GM.WebApi.UseCases.Handlers.Region.Queries.ListRegions;
-using GM.WebApi.UseCases.Handlers.Region.Queries.ListRegions.Responses;
 using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion;
 using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion.Requests;
 using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion.Responses;
-
-using Microsoft.AspNetCore.Mvc;
-
-using Requestum;
-using GM.WebApi.UseCases.Handlers.Region.Queries.GetRegionById;
-using GM.WebApi.UseCases.Handlers.Region.Queries.GetRegionById.Responses;
 using GM.WebApi.UseCases.Handlers.Region.Commands.DeleteRegion;
 using GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion;
 using GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion.Requests;
 using GM.WebApi.UseCases.Handlers.Region.DTOs;
+using GM.WebApi.UseCases.Handlers.Region.Queries.GetRegionById;
+using GM.WebApi.UseCases.Handlers.Region.Queries.GetRegionById.Responses;
+using GM.WebApi.UseCases.Handlers.Region.Queries.ListRegions;
+using GM.WebApi.UseCases.Handlers.Region.Queries.ListRegions.Responses;
+
+using Microsoft.AspNetCore.Mvc;
+
+using Requestum;
 
 namespace GM.WebApi.WebApp.Controllers;
 
-[Route("api/v1/[controller]")]
+[Route("api/v1/regions")]
 [ApiController]
-public class RegionsController : ControllerBase
+public class RegionsController: ControllerBase
 {
     private readonly IRequestum _requestum;
 
@@ -68,7 +68,7 @@ public class RegionsController : ControllerBase
         [FromBody] PatchRegionRequest? request,
         CancellationToken cancellationToken = default)
     {
-        if (request is null)
+        if(request is null)
         {
             return BadRequest();
         }
@@ -90,7 +90,7 @@ public class RegionsController : ControllerBase
         [FromRoute] Guid id,
         CancellationToken cancellationToken = default)
     {
-        await _requestum.ExecuteAsync<DeleteRegionCommand>(
+        await _requestum.ExecuteAsync(
             new DeleteRegionCommand { RegionId = id },
             cancellationToken);
 
