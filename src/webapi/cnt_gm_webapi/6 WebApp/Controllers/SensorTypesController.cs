@@ -1,5 +1,8 @@
 using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.CreateSensorType;
 using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.CreateSensorType.Requests;
+using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.DeleteSensorType;
+using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.PatchSensorType;
+using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.PatchSensorType.Requests;
 using GM.WebApi.UseCases.Handlers.SensorTypes.DTOs;
 using GM.WebApi.UseCases.Handlers.SensorTypes.Queries.GetSensorTypeById;
 using GM.WebApi.UseCases.Handlers.SensorTypes.Queries.GetSensorTypeById.Responses;
@@ -14,7 +17,7 @@ namespace GM.WebApi.WebApp.Controllers;
 
 [Route("api/v1/sensor-types")]
 [ApiController]
-public class SensorTypesController : ControllerBase
+public class SensorTypesController: ControllerBase
 {
     private readonly IRequestum _requestum;
 
@@ -61,5 +64,43 @@ public class SensorTypesController : ControllerBase
             });
 
         return Created($"/api/v1/sensor-types/{result.Id}", result);
+    }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<SensorTypeDto>> PatchSensorTypeAsync(
+        [FromRoute] Guid id,
+        [FromBody] PatchSensorTypeRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        if(request is null)
+        {
+            return BadRequest();
+        }
+
+        var result = await _requestum.ExecuteAsync<PatchSensorTypeCommand, SensorTypeDto>(
+            new PatchSensorTypeCommand
+            {
+                SensorTypeId = id,
+                Code = request.Code,
+                Name = request.Name,
+                DefaultUnit = request.DefaultUnit,
+                ValueMin = request.ValueMin,
+                ValueMax = request.ValueMax,
+                IsActive = request.IsActive,
+            });
+
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteSensorTypeAsync(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        await _requestum.ExecuteAsync(
+            new DeleteSensorTypeCommand { SensorTypeId = id },
+            cancellationToken);
+
+        return NoContent();
     }
 }

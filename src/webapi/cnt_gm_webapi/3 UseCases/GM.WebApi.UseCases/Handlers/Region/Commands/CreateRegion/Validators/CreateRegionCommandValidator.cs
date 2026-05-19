@@ -1,8 +1,8 @@
 using FluentValidation;
 
-namespace GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion.Validations;
+namespace GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion.Validators;
 
-public sealed class CreateRegionCommandValidator : AbstractValidator<CreateRegionCommand>
+public sealed class CreateRegionCommandValidator: AbstractValidator<CreateRegionCommand>
 {
     public CreateRegionCommandValidator()
     {

@@ -40,7 +40,7 @@ public class GetSensorTypeByIdQueryHandlerTests
         }
 
         await using var db = new AppDbContext(options);
-        var handler = new GetSensorTypeByIdQueryHandler(db, new GetSensorTypeByIdQueryValidation());
+        var handler = new GetSensorTypeByIdQueryHandler(db, new GetSensorTypeByIdQueryValidator());
 
         var result = await handler.HandleAsync(new GetSensorTypeByIdQuery { SensorTypeId = id });
 
@@ -64,7 +64,7 @@ public class GetSensorTypeByIdQueryHandlerTests
             .Options;
 
         await using var db = new AppDbContext(options);
-        var handler = new GetSensorTypeByIdQueryHandler(db, new GetSensorTypeByIdQueryValidation());
+        var handler = new GetSensorTypeByIdQueryHandler(db, new GetSensorTypeByIdQueryValidator());
 
         await Assert.ThrowsAsync<UseCaseNotFoundException>(() =>
             handler.HandleAsync(new GetSensorTypeByIdQuery { SensorTypeId = Guid.NewGuid() }));
@@ -78,7 +78,7 @@ public class GetSensorTypeByIdQueryHandlerTests
             .Options;
 
         await using var db = new AppDbContext(options);
-        var handler = new GetSensorTypeByIdQueryHandler(db, new GetSensorTypeByIdQueryValidation());
+        var handler = new GetSensorTypeByIdQueryHandler(db, new GetSensorTypeByIdQueryValidator());
 
         await Assert.ThrowsAsync<ValidationException>(() =>
             handler.HandleAsync(new GetSensorTypeByIdQuery { SensorTypeId = Guid.Empty }));

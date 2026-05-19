@@ -2,7 +2,7 @@ using FluentValidation;
 
 using GM.WebApi.UseCases.Extensions;
 
-namespace GM.WebApi.UseCases.Handlers.SensorTypes.Commands.CreateSensorType.Validations;
+namespace GM.WebApi.UseCases.Handlers.SensorTypes.Commands.CreateSensorType.Validators;
 
 /// <summary>
 /// Валидация команды создания типа датчика.

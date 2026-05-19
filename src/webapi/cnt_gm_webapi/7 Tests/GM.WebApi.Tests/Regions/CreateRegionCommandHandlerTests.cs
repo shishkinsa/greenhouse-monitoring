@@ -1,7 +1,7 @@
 using GM.WebApi.DataAccess.Postgres.Data;
 using GM.WebApi.UseCases.Exceptions;
 using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion;
-using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion.Validations;
+using GM.WebApi.UseCases.Handlers.Region.Commands.CreateRegion.Validators;
 
 using FluentValidation;
 

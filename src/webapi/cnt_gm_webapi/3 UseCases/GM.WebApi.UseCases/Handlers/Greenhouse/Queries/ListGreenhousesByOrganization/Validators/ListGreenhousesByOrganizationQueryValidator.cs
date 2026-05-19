@@ -4,9 +4,9 @@ using GM.WebApi.UseCases.Handlers.Greenhouse.Queries.ListGreenhousesByOrganizati
 
 namespace GM.WebApi.UseCases.Handlers.Greenhouse.Queries.ListGreenhousesByOrganization.Validators;
 
-public sealed class ListGreenhousesByOrganizationQueryValidation : AbstractValidator<ListGreenhousesByOrganizationQuery>
+public sealed class ListGreenhousesByOrganizationQueryValidator : AbstractValidator<ListGreenhousesByOrganizationQuery>
 {
-    public ListGreenhousesByOrganizationQueryValidation()
+    public ListGreenhousesByOrganizationQueryValidator()
     {
         RuleFor(x => x.OrganizationId)
             .NotEqual(Guid.Empty)

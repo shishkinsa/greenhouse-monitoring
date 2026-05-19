@@ -1,8 +1,8 @@
 using FluentValidation;
 
-namespace GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion.Validations;
+namespace GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion.Validators;
 
-public sealed class PatchRegionCommandValidator : AbstractValidator<PatchRegionCommand>
+public sealed class PatchRegionCommandValidator: AbstractValidator<PatchRegionCommand>
 {
     public PatchRegionCommandValidator()
     {

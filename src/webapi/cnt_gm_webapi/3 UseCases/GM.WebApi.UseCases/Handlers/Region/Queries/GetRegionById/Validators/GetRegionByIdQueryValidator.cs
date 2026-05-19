@@ -2,9 +2,9 @@ using FluentValidation;
 
 namespace GM.WebApi.UseCases.Handlers.Region.Queries.GetRegionById.Validators;
 
-public class GetRegionByIdQueryValidation: AbstractValidator<GetRegionByIdQuery>
+public sealed class GetRegionByIdQueryValidator : AbstractValidator<GetRegionByIdQuery>
 {
-    public GetRegionByIdQueryValidation()
+    public GetRegionByIdQueryValidator()
     {
         RuleFor(x => x.RegionId)
             .NotEqual(Guid.Empty)

@@ -7,7 +7,7 @@ using Requestum.Contract;
 
 namespace GM.WebApi.UseCases.Handlers.Region.Commands.DeleteRegion;
 
-public sealed class DeleteRegionCommandHandler : IAsyncCommandHandler<DeleteRegionCommand>
+public sealed class DeleteRegionCommandHandler: IAsyncCommandHandler<DeleteRegionCommand>
 {
     private readonly IDbContext _db;
 
@@ -19,14 +19,9 @@ public sealed class DeleteRegionCommandHandler : IAsyncCommandHandler<DeleteRegi
     public async Task ExecuteAsync(DeleteRegionCommand command, CancellationToken cancellationToken = default)
     {
         var region = await _db.Regions
-            .FirstOrDefaultAsync(r => r.Id == command.RegionId, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Id == command.RegionId, cancellationToken) ?? throw new UseCaseNotFoundException($"Регион с идентификатором {command.RegionId} не найден.");
 
-        if (region is null)
-        {
-            throw new UseCaseNotFoundException($"Регион с идентификатором {command.RegionId} не найден.");
-        }
-
-        if (!region.IsActive)
+        if(!region.IsActive)
         {
             return;
         }

@@ -34,7 +34,7 @@ public sealed class ListGreenhousesByOrganizationQueryHandler
         var orgExists = await _db.Organizations.AnyAsync(
             o => o.Id == query.OrganizationId,
             cancellationToken);
-        if (!orgExists)
+        if(!orgExists)
         {
             throw new UseCaseNotFoundException(
                 $"Организация с идентификатором {query.OrganizationId} не найдена.");

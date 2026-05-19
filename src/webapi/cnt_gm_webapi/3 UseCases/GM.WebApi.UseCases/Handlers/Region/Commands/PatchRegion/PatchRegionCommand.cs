@@ -7,7 +7,7 @@ namespace GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion;
 /// <summary>
 /// Частичное обновление региона по идентификатору.
 /// </summary>
-public sealed class PatchRegionCommand : ICommand<RegionDto>
+public sealed class PatchRegionCommand: ICommand<RegionDto>
 {
     public Guid RegionId { get; set; }
 

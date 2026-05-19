@@ -8,7 +8,7 @@ using Requestum.Contract;
 
 namespace GM.WebApi.UseCases.Handlers.Region.Queries.ListRegions;
 
-public class ListRegionsQueryHandler : IAsyncQueryHandler<ListRegionsQuery, RegionListResponse>
+public class ListRegionsQueryHandler: IAsyncQueryHandler<ListRegionsQuery, RegionListResponse>
 {
     private readonly IDbContext _db;
 

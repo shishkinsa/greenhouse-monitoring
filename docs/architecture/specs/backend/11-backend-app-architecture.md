@@ -115,7 +115,7 @@ Handlers/
         Requests/
         Dto/
         Responses/
-        Validations/          # валидаторы команды (FluentValidation и т.п.)
+        Validators/           # валидаторы команды (FluentValidation, *Validator)
     Queries/
       <UseCaseName>/
         <UseCaseName>Query.cs
@@ -123,7 +123,7 @@ Handlers/
         Requests/
         Dto/
         Responses/
-        Validators/           # валидаторы запроса (синонимично Validations — выбрать одно имя в сервисе)
+        Validators/            # валидаторы запроса (*QueryValidator)
     Enums/                    # перечисления, относящиеся к фиче целиком
     Mappings/                 # ручные маппинги между DTO и доменом
 ```
@@ -131,7 +131,7 @@ Handlers/
 **Правила.**
 
 - **Один сценарий — одна папка** под `Commands/<UseCaseName>/` или `Queries/<UseCaseName>/`: в ней лежат команда/запрос, обработчик и локальные `Requests`, `Dto`, `Responses`, валидаторы.
-- **Именование.** `*Command` + `*CommandHandler`, `*Query` + `*Handler` (или `*QueryHandler` — главное единообразие в решении). Ответ API сценария — в `Responses/`; вход контроллера — в `Requests/`, если его нужно отделить от типа команды/запроса.
+- **Именование.** `*Command` + `*CommandHandler`, `*Query` + `*Handler` (или `*QueryHandler` — главное единообразие в решении). Валидаторы FluentValidation: папка `Validators/`, класс `*CommandValidator` или `*QueryValidator`. Ответ API сценария — в `Responses/`; вход контроллера — в `Requests/`, если его нужно отделить от типа команды/запроса.
 - **Общее для фичи** (`Enums/`, `Mappings/`) — только то, что реально переиспользуется несколькими сценариями внутри `<Feature>`; иначе тип держится рядом с конкретным сценарием.
 - **Пространства имён** следуют пути: `GM.<Сервис>.UseCases.Handlers.<Feature>.Commands.<UseCaseName>` и зеркально для `Queries`.
 

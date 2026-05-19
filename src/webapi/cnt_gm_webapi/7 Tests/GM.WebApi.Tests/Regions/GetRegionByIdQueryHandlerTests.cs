@@ -37,7 +37,7 @@ public class GetRegionByIdQueryHandlerTests
         }
 
         await using var db = new AppDbContext(options);
-        var handler = new GetRegionByIdQueryHandler(db, new GetRegionByIdQueryValidation());
+        var handler = new GetRegionByIdQueryHandler(db, new GetRegionByIdQueryValidator());
 
         var result = await handler.HandleAsync(new GetRegionByIdQuery { RegionId = id });
 
@@ -58,7 +58,7 @@ public class GetRegionByIdQueryHandlerTests
             .Options;
 
         await using var db = new AppDbContext(options);
-        var handler = new GetRegionByIdQueryHandler(db, new GetRegionByIdQueryValidation());
+        var handler = new GetRegionByIdQueryHandler(db, new GetRegionByIdQueryValidator());
 
         await Assert.ThrowsAsync<UseCaseNotFoundException>(() =>
             handler.HandleAsync(new GetRegionByIdQuery { RegionId = Guid.NewGuid() }));
@@ -72,7 +72,7 @@ public class GetRegionByIdQueryHandlerTests
             .Options;
 
         await using var db = new AppDbContext(options);
-        var handler = new GetRegionByIdQueryHandler(db, new GetRegionByIdQueryValidation());
+        var handler = new GetRegionByIdQueryHandler(db, new GetRegionByIdQueryValidator());
 
         await Assert.ThrowsAsync<ValidationException>(() =>
             handler.HandleAsync(new GetRegionByIdQuery { RegionId = Guid.Empty }));

@@ -1,15 +1,13 @@
 using FluentValidation;
 
-using GM.WebApi.UseCases.Handlers.SensorTypes.Queries.GetSensorTypeById;
-
 namespace GM.WebApi.UseCases.Handlers.SensorTypes.Queries.GetSensorTypeById.Validators;
 
 /// <summary>
 /// Валидация запроса типа датчика по идентификатору.
 /// </summary>
-public sealed class GetSensorTypeByIdQueryValidation : AbstractValidator<GetSensorTypeByIdQuery>
+public sealed class GetSensorTypeByIdQueryValidator : AbstractValidator<GetSensorTypeByIdQuery>
 {
-    public GetSensorTypeByIdQueryValidation()
+    public GetSensorTypeByIdQueryValidator()
     {
         RuleFor(x => x.SensorTypeId)
             .NotEqual(Guid.Empty)

@@ -1,16 +1,16 @@
+using FluentValidation;
+
 using GM.WebApi.DataAccess.Postgres.Data;
 using GM.WebApi.Entities.Models;
 using GM.WebApi.UseCases.Exceptions;
-using GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion;
-using GM.WebApi.UseCases.Handlers.Region.Commands.PatchRegion.Validators;
-
-using FluentValidation;
+using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.PatchSensorType;
+using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.PatchSensorType.Validators;
 
 using Microsoft.EntityFrameworkCore;
 
-namespace GM.WebApi.Tests.Regions;
+namespace GM.WebApi.Tests.SensorTypes;
 
-public class PatchRegionCommandHandlerTests
+public class PatchSensorTypeCommandHandlerTests
 {
     [Fact]
     public async Task ExecuteAsync_updates_name_and_returns_dto()
@@ -24,35 +24,39 @@ public class PatchRegionCommandHandlerTests
 
         await using (var arrange = new AppDbContext(options))
         {
-            arrange.Regions.Add(new Region
+            arrange.SensorTypes.Add(new SensorType
             {
                 Id = id,
-                Code = "c1",
-                Name = "Old",
+                Code = "temperature",
+                Name = "Старое имя",
+                DefaultUnit = "C",
+                ValueMin = -40,
+                ValueMax = 60,
                 IsActive = true,
                 CreatedAt = created,
-                UpdatedAt = created
+                UpdatedAt = created,
             });
             await arrange.SaveChangesAsync();
         }
 
         await using var db = new AppDbContext(options);
-        var handler = new PatchRegionCommandHandler(db, new PatchRegionCommandValidator());
+        var handler = new PatchSensorTypeCommandHandler(db, new PatchSensorTypeCommandValidator());
 
-        var result = await handler.ExecuteAsync(new PatchRegionCommand
+        var result = await handler.ExecuteAsync(new PatchSensorTypeCommand
         {
-            RegionId = id,
-            Name = "  New name  "
+            SensorTypeId = id,
+            Name = "  Новое имя  ",
         });
 
-        Assert.Equal("c1", result.Code);
-        Assert.Equal("New name", result.Name);
+        Assert.Equal("temperature", result.Code);
+        Assert.Equal("Новое имя", result.Name);
+        Assert.Equal("C", result.DefaultUnit);
         Assert.True(result.IsActive);
         Assert.Equal(created, result.CreatedAt);
         Assert.True(result.UpdatedAt > created);
 
-        var stored = await db.Regions.AsNoTracking().SingleAsync(r => r.Id == id);
-        Assert.Equal("New name", stored.Name);
+        var stored = await db.SensorTypes.AsNoTracking().SingleAsync(st => st.Id == id);
+        Assert.Equal("Новое имя", stored.Name);
     }
 
     [Fact]
@@ -67,31 +71,35 @@ public class PatchRegionCommandHandlerTests
 
         await using (var arrange = new AppDbContext(options))
         {
-            arrange.Regions.Add(new Region
+            arrange.SensorTypes.Add(new SensorType
             {
                 Id = id,
-                Code = "ab",
-                Name = "R",
+                Code = "humidity",
+                Name = "Влажность",
                 IsActive = true,
                 CreatedAt = now,
-                UpdatedAt = now
+                UpdatedAt = now,
             });
             await arrange.SaveChangesAsync();
         }
 
         await using var db = new AppDbContext(options);
-        var handler = new PatchRegionCommandHandler(db, new PatchRegionCommandValidator());
+        var handler = new PatchSensorTypeCommandHandler(db, new PatchSensorTypeCommandValidator());
 
-        var result = await handler.ExecuteAsync(new PatchRegionCommand { RegionId = id, Code = "  ab  " });
+        var result = await handler.ExecuteAsync(new PatchSensorTypeCommand
+        {
+            SensorTypeId = id,
+            Code = "  humidity  ",
+        });
 
-        Assert.Equal("ab", result.Code);
+        Assert.Equal("humidity", result.Code);
     }
 
     [Fact]
-    public async Task ExecuteAsync_code_taken_by_other_region_throws_UseCaseConflictException()
+    public async Task ExecuteAsync_code_taken_by_other_type_throws_UseCaseConflictException()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(nameof(ExecuteAsync_code_taken_by_other_region_throws_UseCaseConflictException))
+            .UseInMemoryDatabase(nameof(ExecuteAsync_code_taken_by_other_type_throws_UseCaseConflictException))
             .Options;
 
         var idA = Guid.NewGuid();
@@ -100,34 +108,50 @@ public class PatchRegionCommandHandlerTests
 
         await using (var arrange = new AppDbContext(options))
         {
-            arrange.Regions.AddRange(
-                new Region { Id = idA, Code = "a", Name = "A", IsActive = true, CreatedAt = now, UpdatedAt = now },
-                new Region { Id = idB, Code = "b", Name = "B", IsActive = true, CreatedAt = now, UpdatedAt = now });
+            arrange.SensorTypes.AddRange(
+                new SensorType
+                {
+                    Id = idA,
+                    Code = "temperature",
+                    Name = "A",
+                    IsActive = true,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                },
+                new SensorType
+                {
+                    Id = idB,
+                    Code = "humidity",
+                    Name = "B",
+                    IsActive = true,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                });
             await arrange.SaveChangesAsync();
         }
 
         await using var db = new AppDbContext(options);
-        var handler = new PatchRegionCommandHandler(db, new PatchRegionCommandValidator());
+        var handler = new PatchSensorTypeCommandHandler(db, new PatchSensorTypeCommandValidator());
 
         await Assert.ThrowsAsync<UseCaseConflictException>(() =>
-            handler.ExecuteAsync(new PatchRegionCommand { RegionId = idA, Code = "b" }));
+            handler.ExecuteAsync(new PatchSensorTypeCommand { SensorTypeId = idA, Code = "humidity" }));
     }
 
     [Fact]
-    public async Task ExecuteAsync_unknown_region_throws_UseCaseNotFoundException()
+    public async Task ExecuteAsync_unknown_id_throws_UseCaseNotFoundException()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(nameof(ExecuteAsync_unknown_region_throws_UseCaseNotFoundException))
+            .UseInMemoryDatabase(nameof(ExecuteAsync_unknown_id_throws_UseCaseNotFoundException))
             .Options;
 
         await using var db = new AppDbContext(options);
-        var handler = new PatchRegionCommandHandler(db, new PatchRegionCommandValidator());
+        var handler = new PatchSensorTypeCommandHandler(db, new PatchSensorTypeCommandValidator());
 
         await Assert.ThrowsAsync<UseCaseNotFoundException>(() =>
-            handler.ExecuteAsync(new PatchRegionCommand
+            handler.ExecuteAsync(new PatchSensorTypeCommand
             {
-                RegionId = Guid.NewGuid(),
-                Name = "X"
+                SensorTypeId = Guid.NewGuid(),
+                Name = "X",
             }));
     }
 
@@ -143,23 +167,23 @@ public class PatchRegionCommandHandlerTests
 
         await using (var arrange = new AppDbContext(options))
         {
-            arrange.Regions.Add(new Region
+            arrange.SensorTypes.Add(new SensorType
             {
                 Id = id,
-                Code = "c",
-                Name = "N",
+                Code = "temperature",
+                Name = "T",
                 IsActive = true,
                 CreatedAt = now,
-                UpdatedAt = now
+                UpdatedAt = now,
             });
             await arrange.SaveChangesAsync();
         }
 
         await using var db = new AppDbContext(options);
-        var handler = new PatchRegionCommandHandler(db, new PatchRegionCommandValidator());
+        var handler = new PatchSensorTypeCommandHandler(db, new PatchSensorTypeCommandValidator());
 
         await Assert.ThrowsAsync<ValidationException>(() =>
-            handler.ExecuteAsync(new PatchRegionCommand { RegionId = id }));
+            handler.ExecuteAsync(new PatchSensorTypeCommand { SensorTypeId = id }));
     }
 
     [Fact]
@@ -174,25 +198,29 @@ public class PatchRegionCommandHandlerTests
 
         await using (var arrange = new AppDbContext(options))
         {
-            arrange.Regions.Add(new Region
+            arrange.SensorTypes.Add(new SensorType
             {
                 Id = id,
-                Code = "z",
-                Name = "Z",
+                Code = "soil_ph",
+                Name = "pH",
                 IsActive = true,
                 CreatedAt = now,
-                UpdatedAt = now
+                UpdatedAt = now,
             });
             await arrange.SaveChangesAsync();
         }
 
         await using var db = new AppDbContext(options);
-        var handler = new PatchRegionCommandHandler(db, new PatchRegionCommandValidator());
+        var handler = new PatchSensorTypeCommandHandler(db, new PatchSensorTypeCommandValidator());
 
-        var result = await handler.ExecuteAsync(new PatchRegionCommand { RegionId = id, IsActive = false });
+        var result = await handler.ExecuteAsync(new PatchSensorTypeCommand
+        {
+            SensorTypeId = id,
+            IsActive = false,
+        });
 
         Assert.False(result.IsActive);
-        var stored = await db.Regions.AsNoTracking().SingleAsync(r => r.Id == id);
+        var stored = await db.SensorTypes.AsNoTracking().SingleAsync(st => st.Id == id);
         Assert.False(stored.IsActive);
     }
 }

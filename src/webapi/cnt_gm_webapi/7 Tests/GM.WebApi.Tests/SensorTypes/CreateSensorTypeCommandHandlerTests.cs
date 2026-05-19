@@ -3,7 +3,7 @@ using FluentValidation;
 using GM.WebApi.DataAccess.Postgres.Data;
 using GM.WebApi.UseCases.Exceptions;
 using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.CreateSensorType;
-using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.CreateSensorType.Validations;
+using GM.WebApi.UseCases.Handlers.SensorTypes.Commands.CreateSensorType.Validators;
 using GM.WebApi.UseCases.Handlers.SensorTypes.Enums;
 
 using Microsoft.EntityFrameworkCore;

@@ -84,7 +84,7 @@ public class ListGreenhousesByOrganizationQueryHandlerTests
         await using var db = new AppDbContext(options);
         var handler = new ListGreenhousesByOrganizationQueryHandler(
             db,
-            new ListGreenhousesByOrganizationQueryValidation());
+            new ListGreenhousesByOrganizationQueryValidator());
 
         var result = await handler.HandleAsync(new ListGreenhousesByOrganizationQuery
         {
@@ -110,7 +110,7 @@ public class ListGreenhousesByOrganizationQueryHandlerTests
         await using var db = new AppDbContext(options);
         var handler = new ListGreenhousesByOrganizationQueryHandler(
             db,
-            new ListGreenhousesByOrganizationQueryValidation());
+            new ListGreenhousesByOrganizationQueryValidator());
 
         await Assert.ThrowsAsync<UseCaseNotFoundException>(() =>
             handler.HandleAsync(new ListGreenhousesByOrganizationQuery
@@ -131,7 +131,7 @@ public class ListGreenhousesByOrganizationQueryHandlerTests
         await using var db = new AppDbContext(options);
         var handler = new ListGreenhousesByOrganizationQueryHandler(
             db,
-            new ListGreenhousesByOrganizationQueryValidation());
+            new ListGreenhousesByOrganizationQueryValidator());
 
         await Assert.ThrowsAsync<ValidationException>(() =>
             handler.HandleAsync(new ListGreenhousesByOrganizationQuery

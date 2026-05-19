@@ -36,13 +36,8 @@ public sealed class GetSensorTypeByIdQueryHandler
 
         var entity = await _db.SensorTypes
             .AsNoTracking()
-            .FirstOrDefaultAsync(st => st.Id == query.SensorTypeId, cancellationToken);
-
-        if (entity is null)
-        {
-            throw new UseCaseNotFoundException(
+            .FirstOrDefaultAsync(st => st.Id == query.SensorTypeId, cancellationToken) ?? throw new UseCaseNotFoundException(
                 $"Тип датчика с идентификатором {query.SensorTypeId} не найден.");
-        }
 
         return new GetSensorTypeByIdResponse
         {
