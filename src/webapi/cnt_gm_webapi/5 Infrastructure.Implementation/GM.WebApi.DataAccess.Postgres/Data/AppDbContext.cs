@@ -37,4 +37,21 @@ public class AppDbContext : DbContext, IDbContext
     public DbSet<GreenhouseVideoCameraInstallation> GreenhouseVideoCameraInstallations { get; set; }
 
     public DbSet<SensorThresholdRule> SensorThresholdRules { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<SensorType>(entity =>
+        {
+            entity.HasIndex(e => e.Code)
+                .IsUnique()
+                .HasDatabaseName("idx_sensor_types_code");
+        });
+
+        modelBuilder.Entity<Location>(entity =>
+        {
+            entity.HasIndex(e => new { e.RegionId, e.Code })
+                .IsUnique()
+                .HasDatabaseName("idx_locations_code_region");
+        });
+    }
 }
